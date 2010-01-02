@@ -1,6 +1,11 @@
 #!/usr/bin/env python3.1
 #
+# Replacement for standard UNIX cal utility, supporting date ranges, and
+# defaulting to Monday as first day of week.
+#
 # Copyright (C) 2010 Richard Mortier <mort@cantab.net>.  All Rights Reserved.
+#
+#
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License version 2 as published by the Free
@@ -20,7 +25,8 @@ import sys, calendar, getopt, datetime
 Months = [ '',
            'january', 'february', 'march', 'april', 'may', 'june',
            'july', 'august', 'september', 'october', 'november', 'december' ]
-Days = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+Days = [ '',
+         'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
          'saturday', 'sunday' ]
 
 def lookup(l, i):
@@ -47,8 +53,9 @@ and <dates> are formatted as:
   <y1>-<y2>           : years from <y1> to <y2>, inclusive
   <m1>-<m2>/<y>       : months from <m1> to <m2> in year <y>, inclusive
   <m1>/<y1>-<m2>/<y2> : months from <m1> in year <y1> to <m2> in <y2>
-for month <m> either 1-12, January-December, or abbreviation thereof
-and year <y> is fully qualified, ie., 10 is year 10, not 2010.
+for day <d> either 1-7, Monday-Sunday, or abbreviation thereof; 
+    month <m> either 1-12, January-December, or abbreviation thereof; and
+    year <y> is fully qualified, ie., 10 is year 10, not 2010.
     """ % (sys.argv[0], ))
     print(err)
     sys.exit(code)
@@ -105,8 +112,12 @@ if __name__ == '__main__':
             elif o in ("-c", "--columns"): ncols = int(a)
             elif o in ("-s", "--separator"): sep = a
             elif o in ("-f", "--firstday"):
-                calendar.setfirstweekday(int(lookup(Days, a.lower())))
-            else: assert False, "unhandled option"
+                d = int(lookup(Days, a.lower()))
+                if not (1 <= d <= 7):
+                    raise Exception("bad first day-of-week %s; "
+                                    "must be 1 (Monday) to 7 (Friday)" % d)
+                calendar.setfirstweekday(d-1)
+            else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
 
     ## compute the months to print
