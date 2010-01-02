@@ -20,20 +20,34 @@ import sys, calendar, getopt, datetime
 Months = [ '',
            'january', 'february', 'march', 'april', 'may', 'june',
            'july', 'august', 'september', 'october', 'november', 'december' ]
-Days = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' ]
+Days = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+         'saturday', 'sunday' ]
 
-def _index(l, i):
+def lookup(l, i):
     if i.isdigit(): return int(i)
 
     for j in range(max(map(len,l)),0,-1):
         ls = list(map(lambda s:s[:j], l))
         if i in ls: return ls.index(i)
 
-    assert False, "unknown month: %s" % (i,)
+    raise Exception("unknown month: %s" % (i,))
 
 def die_with_usage(err="Usage: ", code=0):
+    print("""%s: <options> <dates>
+where available <options> are:
+  -h/--help          : print this message
+  -y/--year          : print calendar for the current year
+  -c/--columns <n>   : format calendar across <n> columns
+  -s/--separator <s> : format calendar using <s> as month separator
+  -f/--firstday <d>  : format calendar with <d> as first-day-of-week
+and <dates> are formatted as:
+  <m>: month <m>
+  <m>/<y: month <m> in year <y>
+  <m1>-<m2>: months from <m1> to <m2>, inclusive
+  <m1>-<m2>/<y>: months from <m1> to <m2> in year <y>, inclusive
+  <m1>/<y1>-<m2>/<y2>: months from <m1> in year <y1> to <m2> in <y2>
+    """ % (sys.argv[0], ))
     print(err)
-    print("%s: <opts>" % (sys.argv[0], ))        
     sys.exit(code)
 
 def incr_month(y,m):
@@ -70,15 +84,16 @@ def format_months(ms, ncols=3, sep='   '):
     
 if __name__ == '__main__':
 
-    year, month = datetime.date.isoformat(datetime.date.today()).split("-")[0:2]
-
-    shortopts = "hyc:s:f:"
-    longopts  = [ "help", "year", "columns=", "separator=", "firstday=" ]
+    ## option parsing    
+    pairs = [ "h/help", "y/year",
+              "c:/columns=", "s:/separator=", "f:/firstday=", ]
+    shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
+    longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err: die_with_usage(err, 2)
 
     ncols = 3
-    sep   = ' '*4
+    sep = ' '*4
     try:
         for o, a in opts:
             if o in ("-h", "--help"): die_with_usage()
@@ -86,24 +101,29 @@ if __name__ == '__main__':
             elif o in ("-c", "--columns"): ncols = int(a)
             elif o in ("-s", "--separator"): sep = a
             elif o in ("-f", "--firstday"):
-                calendar.setfirstweekday(int(_index(Days, a.lower())))
+                calendar.setfirstweekday(int(lookup(Days, a.lower())))
             else: assert False, "unhandled option"
     except Exception as err: die_with_usage(err, 3)
-    
+
+    ## compute the months to print
     months = []
+    if len(args) == 0: args = [ month ]
+    year = datetime.date.isoformat(datetime.date.today()).split("-")[0]
     for a in args:
-        sm,sy, em,ey = int(month),int(year), int(month),int(year)
         s,e = a,a
         if "-" in a: s,e = a.split("-")
 
-        sm = s
-        if "/" in s: sm,sy = s.split("/")
-        sm = _index(Months, sm)
-
-        em = e
+        em,ey = e,int(year)
         if "/" in e: em,ey = e.split("/")
-        em = _index(Months, em)
+        try: em = lookup(Months, em)
+        except Exception as err: die_with_usage(err, 5)
+
+        sm,sy = s,ey
+        if "/" in s: sm,sy = s.split("/")
+        try: sm = lookup(Months, sm)
+        except Exception as err: die_with_usage(err, 4)
 
         months.extend(list(range_months(int(sy),int(sm), int(ey),int(em))))
-    
+
+    ## format and print computed months
     for line in format_months(months, ncols, sep): print(line, end="")
