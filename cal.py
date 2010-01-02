@@ -1,26 +1,49 @@
 #!/usr/bin/env python3.1
 #
 # Replacement for standard UNIX cal utility, supporting date ranges, and
-# defaulting to Monday as first day of week.
+# defaulting to Monday as first day-of-week.
 #
-# Copyright (C) 2010 Richard Mortier <mort@cantab.net>.  All Rights Reserved.
+# Copyright (C) 2010 Richard Mortier <mort@cantab.net>.  All Rights
+# Reserved.
 #
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation
 #
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
 #
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License version 2 as published by the Free
-# Software Foundation
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-# Place - Suite 330, Boston, MA 02111-1307, USA.
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+# USA.
 
 import sys, calendar, getopt, datetime
+
+def die_with_usage(err="Usage: ", code=0):
+    print("""ERROR: %s
+%s: <options> <dates...> where available <options> are:
+  -h/--help          : print this message
+  -y/--year          : interpret arguments as years
+  -c/--columns <n>   : format calendar across <n> columns
+  -s/--separator <s> : format calendar using <s> as month separator
+  -f/--firstday <d>  : format calendar with <d> as first day-of-week
+and <dates> are formatted as:
+  <n>                 : month <n> if 1 <= n <= 12, else year <n>
+  <m>/<y>             : month <m> in year <y>
+  <m1>-<m2>           : months from <m1> to <m2>, inclusive
+  <y1>-<y2>           : years from <y1> to <y2>, inclusive
+  <m1>-<m2>/<y>       : months from <m1> to <m2> in year <y>, inclusive
+  <m1>/<y1>-<m2>/<y2> : months from <m1> in year <y1> to <m2> in <y2>
+for day <d> either 1-7, Monday-Sunday, or abbreviation thereof; 
+    month <m> either 1-12, January-December, or abbreviation thereof; and
+    year <y> is fully qualified, ie., 20 is year 20, not 2020.
+
+Defaults to printing current month, with Monday as first day-of-week.
+    """ % (err, sys.argv[0]))
+    sys.exit(code)
 
 Months = [ '',
            'january', 'february', 'march', 'april', 'may', 'june',
@@ -37,28 +60,6 @@ def lookup(l, i):
         if i in ls: return ls.index(i)
 
     raise Exception("unknown month: %s" % (i,))
-
-def die_with_usage(err="Usage: ", code=0):
-    print("""%s: <options> <dates>
-where available <options> are:
-  -h/--help          : print this message
-  -y/--year          : interpret arguments as years
-  -c/--columns <n>   : format calendar across <n> columns
-  -s/--separator <s> : format calendar using <s> as month separator
-  -f/--firstday <d>  : format calendar with <d> as first-day-of-week
-and <dates> are formatted as:
-  <n>                 : month <n> if 1 <= n <= 12, else year <n>
-  <m>/<y>             : month <m> in year <y>
-  <m1>-<m2>           : months from <m1> to <m2>, inclusive
-  <y1>-<y2>           : years from <y1> to <y2>, inclusive
-  <m1>-<m2>/<y>       : months from <m1> to <m2> in year <y>, inclusive
-  <m1>/<y1>-<m2>/<y2> : months from <m1> in year <y1> to <m2> in <y2>
-for day <d> either 1-7, Monday-Sunday, or abbreviation thereof; 
-    month <m> either 1-12, January-December, or abbreviation thereof; and
-    year <y> is fully qualified, ie., 10 is year 10, not 2010.
-    """ % (sys.argv[0], ))
-    print(err)
-    sys.exit(code)
 
 def incr_month(y,m):
     m += 1
@@ -115,7 +116,7 @@ if __name__ == '__main__':
                 d = int(lookup(Days, a.lower()))
                 if not (1 <= d <= 7):
                     raise Exception("bad first day-of-week %s; "
-                                    "must be 1 (Monday) to 7 (Friday)" % d)
+                                    "must be 1 (Monday) to 7 (Sunday)" % d)
                 calendar.setfirstweekday(d-1)
             else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
@@ -125,7 +126,6 @@ if __name__ == '__main__':
     months = []
     if len(args) == 0: args = [ month ]
     for a in args:
-
         if fullyear: sy,sm, ey,em = int(a),1, int(a),12
         else:
             s,e = a,a
@@ -136,7 +136,7 @@ if __name__ == '__main__':
             try: em = lookup(Months, em)
             except Exception as err: die_with_usage(err, 4)
 
-            sm,sy = s,ey
+            sm,sy = s,ey ## start year is end year if only latter given
             if "/" in s: sm,sy = s.split("/")
             try: sm = lookup(Months, sm)
             except Exception as err: die_with_usage(err, 5)
