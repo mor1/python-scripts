@@ -36,16 +36,19 @@ def die_with_usage(err="Usage: ", code=0):
     print("""%s: <options> <dates>
 where available <options> are:
   -h/--help          : print this message
-  -y/--year          : print calendar for the current year
+  -y/--year          : interpret arguments as years
   -c/--columns <n>   : format calendar across <n> columns
   -s/--separator <s> : format calendar using <s> as month separator
   -f/--firstday <d>  : format calendar with <d> as first-day-of-week
 and <dates> are formatted as:
-  <m>: month <m>
-  <m>/<y: month <m> in year <y>
-  <m1>-<m2>: months from <m1> to <m2>, inclusive
-  <m1>-<m2>/<y>: months from <m1> to <m2> in year <y>, inclusive
-  <m1>/<y1>-<m2>/<y2>: months from <m1> in year <y1> to <m2> in <y2>
+  <n>                 : month <n> if 1 <= n <= 12, else year <n>
+  <m>/<y>             : month <m> in year <y>
+  <m1>-<m2>           : months from <m1> to <m2>, inclusive
+  <y1>-<y2>           : years from <y1> to <y2>, inclusive
+  <m1>-<m2>/<y>       : months from <m1> to <m2> in year <y>, inclusive
+  <m1>/<y1>-<m2>/<y2> : months from <m1> in year <y1> to <m2> in <y2>
+for month <m> either 1-12, January-December, or abbreviation thereof
+and year <y> is fully qualified, ie., 10 is year 10, not 2010.
     """ % (sys.argv[0], ))
     print(err)
     sys.exit(code)
@@ -94,10 +97,11 @@ if __name__ == '__main__':
 
     ncols = 3
     sep = ' '*4
+    fullyear = False
     try:
         for o, a in opts:
             if o in ("-h", "--help"): die_with_usage()
-            elif o in ("-y", "--year"): args.append("jan-dec")
+            elif o in ("-y", "--year"): fullyear = True
             elif o in ("-c", "--columns"): ncols = int(a)
             elif o in ("-s", "--separator"): sep = a
             elif o in ("-f", "--firstday"):
@@ -106,22 +110,28 @@ if __name__ == '__main__':
     except Exception as err: die_with_usage(err, 3)
 
     ## compute the months to print
+    year, month = datetime.date.isoformat(datetime.date.today()).split("-")[0:2]
     months = []
     if len(args) == 0: args = [ month ]
-    year = datetime.date.isoformat(datetime.date.today()).split("-")[0]
     for a in args:
-        s,e = a,a
-        if "-" in a: s,e = a.split("-")
 
-        em,ey = e,int(year)
-        if "/" in e: em,ey = e.split("/")
-        try: em = lookup(Months, em)
-        except Exception as err: die_with_usage(err, 5)
+        if fullyear: sy,sm, ey,em = int(a),1, int(a),12
+        else:
+            s,e = a,a
+            if "-" in a: s,e = a.split("-")
 
-        sm,sy = s,ey
-        if "/" in s: sm,sy = s.split("/")
-        try: sm = lookup(Months, sm)
-        except Exception as err: die_with_usage(err, 4)
+            em,ey = e,int(year)
+            if "/" in e: em,ey = e.split("/")
+            try: em = lookup(Months, em)
+            except Exception as err: die_with_usage(err, 4)
+
+            sm,sy = s,ey
+            if "/" in s: sm,sy = s.split("/")
+            try: sm = lookup(Months, sm)
+            except Exception as err: die_with_usage(err, 5)
+
+            ## fix up if no month is given, only year or year range
+            if sm > 12 or em > 12: sy,ey = sm,em ; sm,em = 1,12
 
         months.extend(list(range_months(int(sy),int(sm), int(ey),int(em))))
 
