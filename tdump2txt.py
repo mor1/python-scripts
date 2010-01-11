@@ -20,13 +20,23 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
 # USA.
 
-import sys, string
+import sys, string, getopt, os.path
 
 PRINTABLE   = string.punctuation + string.digits + string.ascii_letters
-UNPRINTABLE = '.'
 HEX_PREFIX  = "        0x"
 
-def prettify(line):
+def die_with_usage(err="", code=0):
+    print("""ERROR: %s
+Usage: %s <options> where available <options> are:
+  -h/--help            : print this message
+  -u/--unprintable <c> : character representing unprintable input; default '.'
+
+Takes "tcpdump -x" output on stdin, appending ASCII translation of hexdump lines
+""" % (
+              err, os.path.basename(sys.argv[0])))
+    sys.exit(code)
+
+def prettify(line, unprintable="."):
     ret = ""
 
     def hilo(word):
@@ -35,10 +45,10 @@ def prettify(line):
         hi = ""
         if len(word) == 4:
             hi = chr((n>>8) & 0xff)
-            if(hi not in PRINTABLE): hi = UNPRINTABLE
+            if(hi not in PRINTABLE): hi = unprintable
 
         lo = chr(n & 0xff)
-        if(lo not in PRINTABLE): lo = UNPRINTABLE
+        if(lo not in PRINTABLE): lo = unprintable
 
         return "%s%s" % (hi, lo)
 
@@ -46,6 +56,22 @@ def prettify(line):
 
 if __name__ == '__main__':
     try:
+        ## option parsing    
+        pairs = [ "h/help", "u:/unprintable=", ]
+        shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
+        longopts = [ pair.split("/")[1] for pair in pairs ]
+        try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
+        except getopt.GetoptError as err: die_with_usage(err, 2)
+
+        unprintable = "."
+        try:
+            for o, a in opts:
+                if o in ("-h", "--help"): die_with_usage()
+                elif o in ("-u", "--unprintable"): unprintable = a
+                else: raise Exception("unhandled option")
+        except Exception as err: die_with_usage(err, 3)
+
+        ## main loop: capture and prettify
         while 1:
             line = sys.stdin.readline().expandtabs()
             
@@ -56,7 +82,7 @@ if __name__ == '__main__':
                 index, data = line.split(":")
                 data = data.strip()
                 pad = " "*(45-len(data))
-                print("%s: %s%s%s" % (index, data, pad, prettify(data)))
+                print("%s: %s%s%s" % (index, data, pad, prettify(data, unprintable)))
 
             sys.stdout.flush()
                 
