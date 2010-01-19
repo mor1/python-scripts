@@ -24,10 +24,12 @@ import re, sys, getopt
 
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
-%s: <options> where available <options> are:
-  -h/--help          : print this message
-  -s/--strings <file>: read abbreviations in from <file>
+%s: <options> [files...] where available <options> are:
+  -h/--help           : print this message
+  -s/--strings <file> : read abbreviations in from <file>
+  -o/--output <file>  : output to <file>
 
+Default output is stdout.
     """ % (err, sys.argv[0]))
     sys.exit(code)
 
@@ -92,6 +94,7 @@ RECORDTYPES = {
     'inproceedings': InProceedings,
     }
     
+_complete_re = re.compile("^\}$")
 _entry_re = re.compile("@(?P<entry>\w+)\{(?P<label>.+),$")
 _field_re = re.compile("(?P<key>\w+)\s*=\s*(?P<value>.*)$")
 
@@ -121,13 +124,15 @@ if __name__ == '__main__':
             for line in map(lambda l:l.strip(), inf.readlines()):
                 try:
                     if len(line) == 0: continue
-                    elif line == '}':
-                        label = record.label
-                        if label in Records:
-                            raise Exception("collision! label=%s # %s" % (label,record.label,))
-                        Records[label] = record
-                    
                     else:
+                        m = _complete_re.match(line)
+                        if m:
+                            label = record.label
+                            if label in Records:
+                                raise Exception("collision! label=%s # %s" % (label,record.label,))
+                            Records[label] = record
+                            continue
+                        
                         m = _entry_re.match(line)
                         if m:
                             entry = m.group("entry").lower()
