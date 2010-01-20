@@ -1,11 +1,11 @@
 #!/usr/bin/env python3.1
 #
-# Convert .bib files to .html.  Edit .as_html() methods of classes
-# derived from Record to change formatting.  Makes some assumptions
-# about the format of the .bib inputs, particularly that they're
-# well-formed but also that the closing brace of each entry occurs by
-# itself on a line.  Just run it through the Emacs bibtex-mode
-# "reformat-buffer" function...
+# Convert .bib files to .html.  Edit/specify templates or edit
+# .as_html() methods of classes derived from Record to change
+# formatting.  Makes some assumptions about the format of the .bib
+# inputs, particularly that they're well-formed but also that the
+# closing brace of each entry occurs by itself on a line.  Just run it
+# through the Emacs bibtex-mode "reformat-buffer" function...
 #
 # Copyright (C) 2010 Richard Mortier <mort@cantab.net>.  All Rights
 # Reserved.
