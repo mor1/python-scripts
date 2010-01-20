@@ -1,7 +1,11 @@
 #!/usr/bin/env python3.1
 #
 # Convert .bib files to .html.  Edit .as_html() methods of classes
-# derived from Record to change formatting.
+# derived from Record to change formatting.  Makes some assumptions
+# about the format of the .bib inputs, particularly that they're
+# well-formed but also that the closing brace of each entry occurs by
+# itself on a line.  Just run it through the Emacs bibtex-mode
+# "reformat-buffer" function...
 #
 # Copyright (C) 2010 Richard Mortier <mort@cantab.net>.  All Rights
 # Reserved.
@@ -98,7 +102,26 @@ class Article(Record):
                 )))
 
     def as_html(self):
-        return "article %s - %s" % (self.values["author"], self.values["title"],)
+        if 'number' not in self.values: self.values['number'] = ""
+        else:
+            self.values["number"] = "(%s)" % (self.values["number"],)
+
+        if 'journal' not in self.values: self.values['journal'] = ""
+        if 'volume' not in self.values: self.values['volume'] = ""
+        if 'pages' not in self.values: self.values['pages'] = ""
+        if 'month' not in self.values: self.values['month'] = ""
+        if 'year' not in self.values: self.values['year'] = ""
+        if 'doi' not in self.values: self.values['doi'] = ""
+
+        return '''
+        <div class="paper journal">
+            <span class="title">{title}</span><br />
+            <span class="authors">{author}</span><br />
+            <span class="venue">{journal}, {volume}{number}:{pages}</span>
+            <span class="date">{month}, {year}</span><br />
+            <span class="doi">{doi}</span>
+        </div>'''.format(**self.values)
+            
 
 class InProceedings(Record):
     def __str__(self):
@@ -116,7 +139,24 @@ class InProceedings(Record):
                 )))
 
     def as_html(self):
-        return "inproceedings %s - %s - %s" % (self.values["author"], self.values["title"], self.values["booktitle"])
+        if 'pages' not in self.value: self.values['pages'] = ''
+        else:
+            self.values['pages'] = ", %s" % (self.values['pages'],)
+        if 'address' not in self.values: self.values['address'] = ''
+        else:
+            self.values['address'] = ". %s" % (self.values['address'],)
+        if 'month' not in self.values: self.values['month'] = ""
+        if 'year' not in self.values: self.values['year'] = ""
+        if 'doi' not in self.values: self.values['doi'] = ""
+
+        return '''
+        <div class="paper conference">
+            <span class="title">{title}</span><br />
+            <span class="authors">{author}</span><br />
+            <span class="venue">{booktitle}{pages}{address}</span>
+            <span class="date">{month}, {year}</span><br />
+            <span class="doi">{doi}</span>
+        </div>'''.format(**self.values)
 
 class Patent(Record):
     def __str__(self):
@@ -130,8 +170,16 @@ class Patent(Record):
                 self.values.get("year", ""),
                 )))
 
+
     def as_html(self):
-        return "patent %s - %s" % (self.values["author"], self.values["title"],)
+        return '''
+        <div class="paper patent">
+            <span class="title">{title}</span><br />
+            <span class="authors">{author}</span><br />
+            <span class="number">{number}</span>
+            <span class="date">{day} {month}, {year}</span><br />
+            <span class="url">{url}</span>
+        </div>'''.format(**self.values)
 
 class TechReport(Record):
     def __str__(self):
@@ -145,7 +193,19 @@ class TechReport(Record):
                 )))
 
     def as_html(self):
-        return "techreport %s - %s - " % (self.values["author"], self.values["title"],)
+        if 'url' not in self.values: self.values['url'] = ''
+        if 'month' not in self.values: self.values['month'] = ''
+        else: self.values['month'] += ' '
+
+        return '''
+        <div class="paper patent">
+            <span class="title">{title}</span><br />
+            <span class="authors">{author}</span><br />
+            <span class="number">{number}</span>
+            <span class="institution">{institution}</span>
+            <span class="date">{month}{year}</span><br />
+            <span class="url">{url}</span>
+        </div>'''.format(**self.values)
 
 RECORDTYPES = {
     'article': Article,
@@ -158,17 +218,22 @@ _complete_re = re.compile("^\}$")
 _entry_re = re.compile("@(?P<entry>\w+)\{(?P<label>.+),$")
 _field_re = re.compile("(?P<key>\w+)\s*=\s*(?P<value>.*)$")
 def parse(args, strings={}):
+    verbose = False
     records = {}
     for inp in args:
         with open(inp) as inf:
             cnt = 0
             for line in map(lambda l:l.strip(), inf.readlines()):
                 cnt += 1
+                if verbose:
+                    print("[%s:%d]: '%s'" % (inp, cnt, line))
                 try:
                     if len(line) == 0: continue
 
                     m = _complete_re.match(line)
                     if m:
+                        record.value = record.value.rstrip(",")
+                        record.values[record.key] = strings.get(record.value, record.value)
                         label = record.label
                         if label in records:
                             raise Exception("collision! label=%s # %s" % (
@@ -187,7 +252,8 @@ def parse(args, strings={}):
                     m = _field_re.match(line)
                     if m:
                         record.value = record.value.rstrip(",")
-                        record.values[record.key] = strings.get(record.value, record.value)
+                        record.values[record.key] = strings.get(
+                            record.value, record.value)
                         record.key = m.group("key")
                         record.value = m.group("value")
                     else: record.value += " "+line
@@ -198,6 +264,9 @@ def parse(args, strings={}):
                         file=sys.stderr)
                     sys.exit(1)
 
+            record.value = record.value.rstrip(",")
+            record.values[record.key] = strings.get(record.value, record.value)
+            
     return records
 
 _string_re = re.compile("^@string\{(?P<key>\w+)=(?P<value>.*)\}$")
@@ -252,7 +321,6 @@ if __name__ == '__main__':
 
     ## parse input
     if strings: strings = parse_strings(strings)
-    print(strings)
     if len(args) == 0: die_with_usage("no input file given")
     records = parse(args, strings).values()
 
