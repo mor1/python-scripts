@@ -20,25 +20,35 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
 # USA.
 
-import re, sys, getopt
+import re, sys, getopt, os
 
-HEADER = ""
-JOURNAL_HEADER = ""
-CONFERENCE_HEADER = ""
-WORKSHOP_HEADER = ""
-PATENT_HEADER = ""
-TECHREPORT_HEADER = ""
-FOOTER = ""
+CWD = os.path.dirname(__file__)
+HEADER = os.path.join(CWD, "bib2html", "header.html")
+FOOTER = os.path.join(CWD, "bib2html", "footer.html")
+H_JOURNALS = os.path.join(CWD, "bib2html", "h_journals.html")
+H_CONFERENCES = os.path.join(CWD, "bib2html", "h_conferences.html")
+H_WORKSHOPS = os.path.join(CWD, "bib2html", "h_workshops.html")
+H_PATENTS = os.path.join(CWD, "bib2html", "h_patents.html")
+H_TECHREPORTS = os.path.join(CWD, "bib2html", "h_techreports.html")
 
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
 %s: <options> [files...] where available <options> are:
-  -h/--help           : print this message
-  -s/--strings <file> : read abbreviations in from <file>
-  -o/--output <file>  : output to <file>
+  -h/--help            : print this message
+  -o/--output <file>   : output to <file>
+  -s/--strings <file>  : read abbreviations in from <file>
 
-Default output is stdout.
-    """ % (err, sys.argv[0]))
+  --header <file>      : set header template to <file>\n\t[def. %s]
+  --footer <file>      : set footer template to <file>\n\t[def. %s]
+  --journals <file>    : set journals header template to <file>\n\t[def. %s]
+  --conferences <file> : set conferences header template to <file>\n\t[def. %s]
+  --workshops <file>   : set workshops header template to <file>\n\t[def. %s]
+  --patents <file>     : set patents header template to <file>\n\t[def. %s]
+  --techreports <file> : set header template to <file>\n\t[def. %s]
+
+Default output is stdout.  
+    """ % (err, sys.argv[0],
+           HEADER, FOOTER, H_JOURNALS, H_CONFERENCES, H_WORKSHOPS, H_PATENTS, H_TECHREPORTS))
     sys.exit(code)
 
 class Record:
@@ -87,7 +97,8 @@ class Article(Record):
                 self.values.get("note",""),
                 )))
 
-    def as_html(self): return ""
+    def as_html(self):
+        return "article %s - %s" % (self.values["author"], self.values["title"],)
 
 class InProceedings(Record):
     def __str__(self):
@@ -104,7 +115,8 @@ class InProceedings(Record):
                 self.values.get("note",""),
                 )))
 
-    def as_html(self): return ""
+    def as_html(self):
+        return "inproceedings %s - %s - %s" % (self.values["author"], self.values["title"], self.values["booktitle"])
 
 class Patent(Record):
     def __str__(self):
@@ -118,7 +130,8 @@ class Patent(Record):
                 self.values.get("year", ""),
                 )))
 
-    def as_html(self): return ""
+    def as_html(self):
+        return "patent %s - %s" % (self.values["author"], self.values["title"],)
 
 class TechReport(Record):
     def __str__(self):
@@ -131,7 +144,8 @@ class TechReport(Record):
                 self.values.get("url", ""),
                 )))
 
-    def as_html(self): return ""
+    def as_html(self):
+        return "techreport %s - %s - " % (self.values["author"], self.values["title"],)
 
 RECORDTYPES = {
     'article': Article,
@@ -143,7 +157,7 @@ RECORDTYPES = {
 _complete_re = re.compile("^\}$")
 _entry_re = re.compile("@(?P<entry>\w+)\{(?P<label>.+),$")
 _field_re = re.compile("(?P<key>\w+)\s*=\s*(?P<value>.*)$")
-def parse(args):
+def parse(args, strings={}):
     records = {}
     for inp in args:
         with open(inp) as inf:
@@ -172,7 +186,8 @@ def parse(args):
 
                     m = _field_re.match(line)
                     if m:
-                        record.values[record.key] = record.value
+                        record.value = record.value.rstrip(",")
+                        record.values[record.key] = strings.get(record.value, record.value)
                         record.key = m.group("key")
                         record.value = m.group("value")
                     else: record.value += " "+line
@@ -183,42 +198,78 @@ def parse(args):
                         file=sys.stderr)
                     sys.exit(1)
 
-    return records    
+    return records
+
+_string_re = re.compile("^@string\{(?P<key>\w+)=(?P<value>.*)\}$")
+def parse_strings(inp):
+    strings = {}
+    with open(inp) as inf:
+        for line in map(lambda l:l.strip(), inf.readlines()):
+            m = _string_re.match(line)
+            if m:
+                key, value = m.group("key"), m.group("value")
+                if key in strings:
+                    raise Exception("collision! key=%s # %s" % (
+                        key,strings.key,))
+                strings[key] = value
+    return strings    
 
 if __name__ == '__main__':
-
     ## option parsing    
-    pairs = [ "h/help", "o:/output=", "s:/strings=", ]
+    pairs = [ "h/help", "o:/output=", "s:/strings=",
+              "/header=", "/footer=",
+              "/journals=", "/conferences=", "/workshops=", "/patents=", "/techreports=", 
+              ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err: die_with_usage(err, 2)
 
     output = sys.stdout
+    strings = None
+    h_page = open(HEADER)
+    f_page = open(FOOTER)
+    h_journals = open(H_JOURNALS)
+    h_conferences = open(H_CONFERENCES)
+    h_workshops = open(H_WORKSHOPS)
+    h_patents = open(H_PATENTS)
+    h_techreports = open(H_TECHREPORTS)
     try:
         for o, a in opts:
             if o in ("-h", "--help"): die_with_usage()
             elif o in ("-o", "--output"): output = open(a, "w+a")
+            elif o in ("-s", "--strings"): strings = a
+            
+            elif o in ("--header"): h_page = open(a)
+            elif o in ("--footer"): f_page = open(a)
+            elif o in ("--journals"): h_journals = open(a)
+            elif o in ("--conferences"): h_conferences = open(a)
+            elif o in ("--workshops"): h_workshops = open(a)
+            elif o in ("--patents"): h_patents = open(a)
+            elif o in ("--techreports"): h_techreports = open(a)
             else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
 
     ## parse input
+    if strings: strings = parse_strings(strings)
+    print(strings)
     if len(args) == 0: die_with_usage("no input file given")
-    records = parse(args).values()
+    records = parse(args, strings).values()
 
     ## output as directed
     def out(s): print(s, file=output)
     def outrs(rs): list(map(lambda r:out(r.as_html()), rs))
+    def outt(f): out("".join(f.readlines()).strip())
     
-    out(HEADER)
-    out(JOURNAL_HEADER)
+    outt(h_page)
+    outt(h_journals)
     outrs(filter(lambda r:r.source.endswith("-journal.bib"), records))
-    out(CONFERENCE_HEADER)
+    outt(h_conferences)
     outrs(filter(lambda r:r.source.endswith("-conference.bib"), records))
-    out(WORKSHOP_HEADER)
+    outt(h_workshops)
     outrs(filter(lambda r:r.source.endswith("-workshop.bib"), records))
-    out(PATENT_HEADER)
+    outt(h_patents)
     outrs(filter(lambda r:r.source.endswith("-patents.bib"), records))
-    out(TECHREPORT_HEADER)
+    outt(h_techreports)
     outrs(filter(lambda r:r.source.endswith("-techreport.bib"), records))
-    out(FOOTER)
+    outt(f_page)
