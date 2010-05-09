@@ -1,3 +1,5 @@
+#!/usr/bin/env python2.6
+#
 # Copyright (C) 2010 Richard Mortier <mort@cantab.net>
 #
 # This program is free software; you can redistribute it and/or modify

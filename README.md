@@ -23,7 +23,8 @@ cal
 ---
 
 Replacement for Unix `cal` command: similar output, more options.
-Defaults to Monday as first day-of-week.
+Highlights headers and current date.  Defaults to Monday as first
+day-of-week.
 
 
 ip2as
@@ -43,6 +44,13 @@ num
 ---
 
 Print number in selection of useful bases (bin, dec, oct, hex).
+
+
+skrype
+------
+
+Skype log-parser, presenting a sequence of records.  If run as script,
+splices all .DBB logfiles to print in sequence-number order.
 
 
 tdump2txt
