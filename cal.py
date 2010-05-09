@@ -25,11 +25,13 @@ import sys, calendar, getopt, datetime
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
 %s: <options> <dates...> where available <options> are:
-  -h/--help          : print this message
-  -y/--year          : interpret arguments as years
-  -c/--columns <n>   : format calendar across <n> columns
-  -s/--separator <s> : format calendar using <s> as month separator
-  -f/--firstday <d>  : format calendar with <d> as first day-of-week
+  -h/--help           : print this message
+  -n/--nohilight      : turn off highlighting
+  -t/--today <today>  : set <today=YYYY-MM-DD> for highlighting
+  -y/--year           : interpret arguments as years
+  -c/--columns <n>    : format calendar across <n> columns
+  -s/--separator <s>  : format calendar using <s> as month separator
+  -f/--firstday <d>   : format calendar with <d> as first day-of-week
 and <dates> are formatted as:
   <n>                 : month <n> if 1 <= n <= 12, else year <n>
   <m>/<y>             : month <m> in year <y>
@@ -45,12 +47,23 @@ Defaults to printing current month, with Monday as first day-of-week.
     """ % (err, sys.argv[0]))
     sys.exit(code)
 
+Year = Month = Date = None
+
 Months = [ '',
            'january', 'february', 'march', 'april', 'may', 'june',
            'july', 'august', 'september', 'october', 'november', 'december' ]
 Days = [ '',
          'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
          'saturday', 'sunday' ]
+
+def _format(f, s):
+    if nohilight or len(s.strip()) == 0: return s
+    else:
+        return '\x1b[0%s%s\x1b[0m' % (f,s)
+                                          
+def bold(s): return _format(';1m', s)
+def standout(s): return _format(';1;7m', s)
+def underline(s): return _format(';4m', s)
 
 def lookup(l, i):
     if i.isdigit(): return int(i)
@@ -72,32 +85,48 @@ def range_months(sy,sm, ey,em):
         yield calendar.month(y,m)
         y,m = incr_month(y,m)
         if (y,m) > (ey,em): break
-        
+                                                 
 def format_months(ms, ncols=3, sep='   '):
     empty_month = [((" "*20)+"\n")*8]
 
     ms = list(ms)
     ms += empty_month*ncols
-
+    year = month = None
     while len(ms) > ncols:
         mss = [ m.split("\n") for m in ms[:ncols] ]
         ms  = ms[ncols:]
 
         for i in range(ncols):
             mss[i] += ['']*(len(mss[i]) % 8)
-            mss[i][0] = mss[i][0].strip().center(20)
-            for j in range(8):
-                mss[i][j] = mss[i][j].ljust(20)
+            if len(mss[i][0].strip().split()) > 0:
+                month, year = mss[i][0].strip().split()
+            mss[i][0] = bold(mss[i][0].strip().center(20))
+            mss[i][1] = underline(mss[i][1].ljust(20))
+
+            for j in range(1,8):
+                if (year == Year and Date in mss[i][j].split()
+                    and Months.index(month.lower()) == int(Month)
+                    ):
+
+                    m = mss[i][j].split()
+                    newm = []
+                    for d in m:
+                        if d == Date: d = standout("%02s" % d)
+                        else: d = "%02s" % d
+                        newm.append(d)
+
+                    mss[i][j] = ' '.join(newm)
                 
+                mss[i][j] = mss[i][j].ljust(20)
+
         for i in range(8):
             for m in mss: yield "%s%s" % (m[i], sep)
             yield "\n"
     
 if __name__ == '__main__':
-
     ## option parsing    
-    pairs = [ "h/help", "y/year",
-              "c:/columns=", "s:/separator=", "f:/firstday=", ]
+    pairs = [ "h/help", "y/year", "n/nohilight", 
+              "c:/columns=", "s:/separator=", "f:/firstday=", "t:/today=", ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
@@ -106,12 +135,18 @@ if __name__ == '__main__':
     ncols = 3
     sep = ' '*4
     fullyear = False
+    today = datetime.date.today()
+    nohilight = False
     try:
         for o, a in opts:
             if o in ("-h", "--help"): die_with_usage()
             elif o in ("-y", "--year"): fullyear = True
             elif o in ("-c", "--columns"): ncols = int(a)
             elif o in ("-s", "--separator"): sep = a
+            elif o in ("-n", "--nohilight"): nohilight = True
+            elif o in ("-t", "--today"):
+                y,m,d = map(int, a.split("-"))
+                today = datetime.date(y,m,d)
             elif o in ("-f", "--firstday"):
                 d = int(lookup(Days, a.lower()))
                 if not (1 <= d <= 7):
@@ -121,17 +156,19 @@ if __name__ == '__main__':
             else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
 
+    Year, Month, Date = datetime.date.isoformat(today).split("-")[0:3]
+    Date = Date.lstrip('0')
+                           
     ## compute the months to print
-    year, month = datetime.date.isoformat(datetime.date.today()).split("-")[0:2]
     months = []
-    if len(args) == 0: args = [ month ]
+    if len(args) == 0: args = [ Month ]
     for a in args:
         if fullyear: sy,sm, ey,em = int(a),1, int(a),12
         else:
             s,e = a,a
             if "-" in a: s,e = a.split("-")
 
-            em,ey = e,int(year)
+            em,ey = e,int(Year)
             if "/" in e: em,ey = e.split("/")
             try: em = lookup(Months, em)
             except Exception as err: die_with_usage(err, 4)
