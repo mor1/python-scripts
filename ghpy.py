@@ -1,13 +1,35 @@
 #!/usr/bin/env python3.1
+#
+# Interact with GitHub, eg., retrieve all private collaborators.
+#
+# Copyright (C) 2010 Richard Mortier <mort@cantab.net>.  All Rights
+# Reserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+# USA.
 
 import sys, json, urllib.request, pprint, getopt
 
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
-%s: <options> <dates...> where available <options> are:
+%s: <options> <commands...> where available <options> are:
   -h/--help           : print this message
-  -l/--login <login>  : 
-  -t/--token <token>  : 
+  -l/--login <login>  : login account name
+  -t/--token <token>  : login token
+
+Currently supported commands:
+  private-collaborators : print JSON-encoded map of collaborators to private repos
     """ % (err, sys.argv[0]))
     sys.exit(code)
 
@@ -58,7 +80,8 @@ if __name__ == '__main__':
             elif o in ("-t", "--token"): token = a
             else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
-    
+    if not (login or token): die_with_usage()
+                                             
     ## setup credentials
     data = {}
     if login: data['login'] = login

@@ -27,6 +27,14 @@ Highlights headers and current date.  Defaults to Monday as first
 day-of-week.
 
 
+ghpy
+----
+
+Wrapper to interact with GitHub using REST API.  Currently implements
+one command, to retrieve mapping of private collaborators to the
+private repositories they collaborate on.
+
+
 ip2as
 -----
 
