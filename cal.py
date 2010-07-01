@@ -104,20 +104,25 @@ def format_months(ms, ncols=3, sep='   '):
             mss[i][1] = underline(mss[i][1].ljust(20))
 
             for j in range(1,8):
-                if (year == Year and Date in mss[i][j].split()
+                if (year == Year
+                    and Date in mss[i][j].split()
                     and Months.index(month.lower()) == int(Month)
                     ):
 
                     m = mss[i][j].split()
-                    newm = []
+                    newm = ['  '] * (7-len(m))
                     for d in m:
                         if d == Date: d = standout("%02s" % d)
                         else: d = "%02s" % d
                         newm.append(d)
 
-                    mss[i][j] = ' '.join(newm)
-                
-                mss[i][j] = mss[i][j].ljust(20)
+                    ## OSX10.6 upgrade change?  ljust() started treating escape
+                    ## chars as real chars (ie., can't do 20 for both higlighted
+                    ## and unhighlighted).
+                    mss[i][j] = ' '.join(newm).ljust(32)
+                    
+                else:
+                    mss[i][j] = mss[i][j].ljust(20)
 
         for i in range(8):
             for m in mss: yield "%s%s" % (m[i], sep)
