@@ -66,3 +66,10 @@ tdump2txt
 
 Filter to pretty print `tcpdump -x` output to the right of the hex
 input: ASCII where possible, hex where not.
+
+
+uontt
+-----
+
+Scrape and reformat University of Nottingham timetable website at
+<http://nottingham.ac.uk/timetables>. 
