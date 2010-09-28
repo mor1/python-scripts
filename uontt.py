@@ -28,6 +28,7 @@ from html5lib import sanitizer
 from html5lib import treebuilders
 from xml.etree import cElementTree as et
 
+ACTIVITY_TYPES = ['Lecture', 'Computing']
 TAG_NS = "http://www.w3.org/1999/xhtml"
 TT_URL = "http://uiwwwsci01.ad.nottingham.ac.uk:8003/reporting/Spreadsheet"
 MODULES_URL = "Modules;name;%(modules)s?template=SWSCUST+Module+Spreadsheet&weeks=1-52"
@@ -64,13 +65,15 @@ def format_staff(s):
 
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
-%s: 
+%s [modules]: 
   -h/--help            : print this message
   -a/--ascii           : output ASCII
   -j/--json            : output JSON
-  --courses [course]   : request for entire courses
+  --courses            : request for entire courses rather than modules
   --activities [types] : specify comma-separated list of activity types
-    """ % (err, sys.argv[0]))
+
+Activity types defaults to [%s]. 
+    """ % (err, sys.argv[0], ", ".join(ACTIVITY_TYPES)))
     sys.exit(code)
 
 def scrape(url):
@@ -130,16 +133,17 @@ def scrape(url):
 if __name__ == '__main__':
 
     ## option parsing    
-    pairs = [ "h/help", "j/json", "a/ascii",
-              "/activities=", "/courses=", 
+    pairs = [ "h/help", "j/json", "a/ascii", "/courses", 
+              "/activities=", 
               ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError, err: die_with_usage(err, 2)
 
-    activity_types = ['Lecture', 'Computing']
-    courses = None
+    activity_types = ACTIVITY_TYPES
+    specify_courses = None
+    courses = modules = None
     dump_json = False
     dump_ascii = False
     try:
@@ -147,14 +151,16 @@ if __name__ == '__main__':
             if o in ("-h", "--help"): die_with_usage()
             elif o in ("-a", "--ascii"): dump_ascii = True
             elif o in ("-j", "--json"): dump_json = True
-            elif o in ("--courses",): courses = "%0D%0A".join(map(urllib.quote_plus, a.split(",")))
+            elif o in ("--courses",): specify_courses = True
             elif o in ("--activities",): activity_types = a.split(",")
             else: raise Exception("unhandled option")
-    except Exception, err: die_with_usage(err, 3)
+    except Exception, err: die_with_usage()
 
     if not (dump_ascii or dump_json): dump_ascii = True
     if "".join(map(lambda s:s.lower(), args)) in Courses:
         courses = "%0D%0A".join(map(urllib.quote_plus, Courses[args[0]]))
+    elif specify_courses:
+        courses = "%0D%0A".join(map(urllib.quote_plus, args))
 
     if courses:
         url = "%s;%s" % (TT_URL, COURSES_URL % { "courses": courses, })
@@ -162,6 +168,7 @@ if __name__ == '__main__':
         modules = "%0D%0A".join(args)
         url = "%s;%s" % (TT_URL, MODULES_URL % { "modules": modules, })
 
+    if not (courses or modules): die_with_usage("", 1)
     modules = scrape(url)
     
     ## dump scraped data; yes, i know i should factor out formatting
