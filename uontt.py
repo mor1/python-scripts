@@ -57,6 +57,8 @@ def format_weeks(s):
                                                                           
 def format_staff(s):
     ss = s.split()
+    if len(ss) <= 2: return "unk"
+
     surname, initials, title = ss[0], "".join(map(lambda s:s[0], ss[1:-1])), ss[-1]
     return "%s%s" % (initials, surname[0])
 
@@ -66,6 +68,7 @@ def die_with_usage(err="Usage: ", code=0):
   -h/--help            : print this message
   -a/--ascii           : output ASCII
   -j/--json            : output JSON
+  --courses [course]   : request for entire courses
   --activities [types] : specify comma-separated list of activity types
     """ % (err, sys.argv[0]))
     sys.exit(code)
@@ -128,7 +131,7 @@ if __name__ == '__main__':
 
     ## option parsing    
     pairs = [ "h/help", "j/json", "a/ascii",
-              "/activities=", 
+              "/activities=", "/courses=", 
               ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
@@ -136,6 +139,7 @@ if __name__ == '__main__':
     except getopt.GetoptError, err: die_with_usage(err, 2)
 
     activity_types = ['Lecture', 'Computing']
+    courses = None
     dump_json = False
     dump_ascii = False
     try:
@@ -143,6 +147,7 @@ if __name__ == '__main__':
             if o in ("-h", "--help"): die_with_usage()
             elif o in ("-a", "--ascii"): dump_ascii = True
             elif o in ("-j", "--json"): dump_json = True
+            elif o in ("--courses",): courses = "%0D%0A".join(map(urllib.quote_plus, a.split(",")))
             elif o in ("--activities",): activity_types = a.split(",")
             else: raise Exception("unhandled option")
     except Exception, err: die_with_usage(err, 3)
@@ -150,6 +155,8 @@ if __name__ == '__main__':
     if not (dump_ascii or dump_json): dump_ascii = True
     if "".join(map(lambda s:s.lower(), args)) in Courses:
         courses = "%0D%0A".join(map(urllib.quote_plus, Courses[args[0]]))
+
+    if courses:
         url = "%s;%s" % (TT_URL, COURSES_URL % { "courses": courses, })
     else:
         modules = "%0D%0A".join(args)
