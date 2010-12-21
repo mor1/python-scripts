@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python2.6
 #
 # Webscrape the ridiculous UNott timetable website into something
 # readable, and provide a useful interface.
@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
 # USA.
 
-import sys, getopt, pprint, urllib
+import sys, getopt, pprint, urllib, textwrap
 import simplejson as json
 
 import html5lib
@@ -44,6 +44,10 @@ Courses = {
                     "Computer Science 4 year UG Full time/3",
                     ],
     }
+
+## : mort@greyjay:~$; curl -v --post302 -i -L -X POST -d"year_id=000110" -d"mnem=G54TCN" 
+
+MODULE_DETAIL_URL = "http://modulecatalogue.nottingham.ac.uk/Nottingham/asp/FindModule.asp"
 
 def tag(t): return "{%s}%s" % (TAG_NS, t)
 def spelling(s):
@@ -76,16 +80,43 @@ Activity types defaults to [%s].
     """ % (err, sys.argv[0], ", ".join(ACTIVITY_TYPES)))
     sys.exit(code)
 
-def scrape(url):
-    ## scrape data
+def fetch(url, data=None):
+    """ Fetch page from URL. """
+    try:
+        bytes = urllib.urlopen(url, data, proxies={}).read()
+        page = bytes.decode("utf8")
+    except UnicodeDecodeError, ude:
+        page = bytes.decode("latin1")
+        
+    return page
 
-    parser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("etree", et),
-                                 tokenizer=sanitizer.HTMLSanitizer)
-    page = urllib.urlopen(url, proxies={}).read().decode("utf8")
+def mk_parser(): return html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("etree", et),
+                                            tokenizer=sanitizer.HTMLSanitizer)
+def scrape_module_readinglist(url):
+    ## https://www.nottingham.ac.uk/is/gateway/readinglists/local/displaylist?module=G52MAL
+    pass
+
+## _key = {
+##     'Education Aims': 'Aims',
+##     'Knowledge and Understanding': 'Knowledge',
+##     'Intellectual Skills': 'Skills',
+##     }
+
+def scrape_module_details(page):
+        
+    parser = mk_parser()
     doc = parser.parse(page)
-    
+    ps = doc.getiterator(tag("p"))
+    return dict([ (c.text.strip().strip(":"),c.tail.strip())
+                  for p in ps for c in p.getchildren() if c.text and c.tail ])
+
+def scrape_timetable(url):
     modules = []
     module = {}
+
+    parser = mk_parser()
+    page = fetch(url)
+    doc = parser.parse(page)
     tables = doc.getiterator(tag("table"))
     for table in tables:
         attrs = set(table.items())
@@ -127,13 +158,13 @@ def scrape(url):
                         if v not in module['acts'][a][k]: module['acts'][a][k].append(v)
 
         else: pass
-
+    
     return modules
 
 if __name__ == '__main__':
 
     ## option parsing    
-    pairs = [ "h/help", "j/json", "a/ascii", "/courses", 
+    pairs = [ "h/help", "j/json", "a/ascii", "/courses", "d/detail",
               "/activities=", 
               ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
@@ -142,8 +173,8 @@ if __name__ == '__main__':
     except getopt.GetoptError, err: die_with_usage(err, 2)
 
     activity_types = ACTIVITY_TYPES
-    specify_courses = None
-    courses = modules = None
+    specify_courses = module_detail = None
+    details = courses = modules = None
     dump_json = False
     dump_ascii = False
     try:
@@ -153,6 +184,7 @@ if __name__ == '__main__':
             elif o in ("-j", "--json"): dump_json = True
             elif o in ("--courses",): specify_courses = True
             elif o in ("--activities",): activity_types = a.split(",")
+            elif o in ("--detail", "-d"): module_detail = True
             else: raise Exception("unhandled option")
     except Exception, err: die_with_usage()
 
@@ -169,8 +201,17 @@ if __name__ == '__main__':
         url = "%s;%s" % (TT_URL, MODULES_URL % { "modules": modules, })
 
     if not (courses or modules): die_with_usage("", 1)
-    modules = scrape(url)
-    
+    modules = scrape_timetable(url)
+
+    if module_detail:
+        durl = MODULE_DETAIL_URL
+        for m in modules:
+            data = { 'year_id': '000110',
+                     'mnem': m['code'],
+                     }
+            page = fetch(durl, urllib.urlencode(data))
+            m['detail'] = scrape_module_details(page)
+                     
     ## dump scraped data; yes, i know i should factor out formatting
     ## and output
 
@@ -190,6 +231,31 @@ if __name__ == '__main__':
                     elif len(week) == 2:
                         print "%02d," % (int(week[0]),),
                 print ")"
+            if 'detail' in module:
+                try:
+                    for k in ('Knowledge and Understanding',
+                              'Professional Skills',
+                              'Intellectual Skills',
+                              'Transferable Skills',
+                              'Education Aims',
+                              ):
+                        if k not in module['detail']:
+                            module['detail'][k] = ""
+                    s = """
+        %(Level)s.  Credits:%(Total Credits)s.
+
+        \x1b[0;1mAims:\x1b[0m
+        %(Education Aims)s
+
+        \x1b[0;1mResults:\x1b[0m
+        %(Knowledge and Understanding)s
+
+        \x1b[0;1mSkills:\x1b[0m
+        %(Professional Skills)s %(Intellectual Skills)s %(Transferable Skills)s
+""" % module['detail']
+                    print textwrap.fill(s, subsequent_indent="\t", replace_whitespace=False)
+                except KeyError, ke:
+                    print "%s.\n%s" % (ke, pprint.pformat(module['detail']))
                          
     elif dump_json:
         print json.dumps(modules)
