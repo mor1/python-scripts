@@ -73,3 +73,4 @@ uontt
 
 Scrape and reformat University of Nottingham timetable website at
 <http://nottingham.ac.uk/timetables>. 
+Now moved to <http://github.com/mor1/uon/>.
