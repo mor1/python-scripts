@@ -31,6 +31,7 @@ from xml.etree import cElementTree as et
 ACTIVITY_TYPES = ['Lecture', 'Computing']
 TAG_NS = "http://www.w3.org/1999/xhtml"
 TT_URL = "http://uiwwwsci01.ad.nottingham.ac.uk:8003/reporting/Spreadsheet"
+## TT_URL = "http://localhost:8003/reporting/Spreadsheet"
 MODULES_URL = "Modules;name;%(modules)s?template=SWSCUST+Module+Spreadsheet&weeks=1-52"
 COURSES_URL = "Programmes+of+Study;name;%(courses)s?template=SWSCUST+Programme+Of+Study+Spreadsheet&weeks=1-52"
 
@@ -46,7 +47,6 @@ Courses = {
     }
 
 ## : mort@greyjay:~$; curl -v --post302 -i -L -X POST -d"year_id=000110" -d"mnem=G54TCN" 
-
 MODULE_DETAIL_URL = "http://modulecatalogue.nottingham.ac.uk/Nottingham/asp/FindModule.asp"
 
 def tag(t): return "{%s}%s" % (TAG_NS, t)
@@ -76,47 +76,43 @@ def die_with_usage(err="Usage: ", code=0):
   --courses            : request for entire courses rather than modules
   --activities [types] : specify comma-separated list of activity types
 
-Activity types defaults to [%s]. 
-    """ % (err, sys.argv[0], ", ".join(ACTIVITY_TYPES)))
+Activity types defaults to [%s].
+
+Courses shortcuts are [%s].
+    """ % (err, sys.argv[0], ", ".join(ACTIVITY_TYPES), ", ".join(Courses.keys())))
     sys.exit(code)
 
-def fetch(url, data=None):
-    """ Fetch page from URL. """
-    try:
-        bytes = urllib.urlopen(url, data, proxies={}).read()
-        page = bytes.decode("utf8")
+def decode(bytes):
+    try: page = bytes.decode("utf8")
     except UnicodeDecodeError, ude:
         page = bytes.decode("latin1")
-        
     return page
 
-def mk_parser(): return html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("etree", et),
-                                            tokenizer=sanitizer.HTMLSanitizer)
-def scrape_module_readinglist(url):
-    ## https://www.nottingham.ac.uk/is/gateway/readinglists/local/displaylist?module=G52MAL
-    pass
+def fetch(url, data=None):
+    f = urllib.urlopen(url, data, proxies={})
+    headers = f.info().items()
+    bytes = f.read()
+    ct = headers['content-type'] if ('content-type' in headers) else ""
+    page = bytes.decode("latin1") if ("charset=ISO-8859-1" in ct) else decode(bytes)
+    return (page, headers)
 
-## _key = {
-##     'Education Aims': 'Aims',
-##     'Knowledge and Understanding': 'Knowledge',
-##     'Intellectual Skills': 'Skills',
-##     }
+def parse(page):
+    parser = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder("etree", et),
+                                 tokenizer=sanitizer.HTMLSanitizer)
+    return parser.parse(page) 
 
-def scrape_module_details(page):
-        
-    parser = mk_parser()
-    doc = parser.parse(page)
+def scrape_module_details(doc):
     ps = doc.getiterator(tag("p"))
-    return dict([ (c.text.strip().strip(":"),c.tail.strip())
-                  for p in ps for c in p.getchildren() if c.text and c.tail ])
+    pprint.pprint([ c.tail for p in ps for c in p.getchildren() if c ])
+    
+    details = dict([ (c.text.strip().strip(":"),c.tail.strip())
+                     for p in ps for c in p.getchildren() if c.text and c.tail ])
 
-def scrape_timetable(url):
+    return details
+
+def scrape_timetable(doc):
     modules = []
     module = {}
-
-    parser = mk_parser()
-    page = fetch(url)
-    doc = parser.parse(page)
     tables = doc.getiterator(tag("table"))
     for table in tables:
         attrs = set(table.items())
@@ -152,7 +148,7 @@ def scrape_timetable(url):
 
                 a = activity["Activity"]
                 if a not in module['acts']:
-                    module['acts'][a] = dict(map(lambda (k,v): (k,[v]), activity.items()))                    
+                    module['acts'][a] = dict(map(lambda (k,v): (k,[v]), activity.items()))
                 else:
                     for (k,v) in activity.items():
                         if v not in module['acts'][a][k]: module['acts'][a][k].append(v)
@@ -200,8 +196,9 @@ if __name__ == '__main__':
         modules = "%0D%0A".join(args)
         url = "%s;%s" % (TT_URL, MODULES_URL % { "modules": modules, })
 
+    ## fetch module data, with details if desired
     if not (courses or modules): die_with_usage("", 1)
-    modules = scrape_timetable(url)
+    modules = scrape_timetable(parse(fetch(url)[0]))
 
     if module_detail:
         durl = MODULE_DETAIL_URL
@@ -209,12 +206,12 @@ if __name__ == '__main__':
             data = { 'year_id': '000110',
                      'mnem': m['code'],
                      }
-            page = fetch(durl, urllib.urlencode(data))
-            m['detail'] = scrape_module_details(page)
+            page, hdrs = fetch(durl, urllib.urlencode(data))
+            m['detail'] = scrape_module_details(parse(page))
                      
+
     ## dump scraped data; yes, i know i should factor out formatting
     ## and output
-
     if dump_ascii:
         for module in modules:
             print module['code'], "--", module['title']
@@ -243,6 +240,9 @@ if __name__ == '__main__':
                             module['detail'][k] = ""
                     s = """
         %(Level)s.  Credits:%(Total Credits)s.
+
+        \x1b[0;1mTarget Students:\x1b[0m
+        %(Target Students)s
 
         \x1b[0;1mAims:\x1b[0m
         %(Education Aims)s
