@@ -10,10 +10,10 @@ enumeration of records.  If executed, will attempt to print all
 contacts as v3.0 vCards.
 
 
-bib2html
+bib2json
 --------
 
-Convert BibTeX files to JSON/HTML.  Relies on well-formed and
+Convert BibTeX files to JSON.  Relies on well-formed and
 reasonably formatted input (ie., it's not a fully fledged BibTeX
 parser).  Running it through Emacs BibTeX-mode's 'validate' and
 'format' should suffice.
