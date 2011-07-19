@@ -34,6 +34,42 @@ def die_with_usage(err="Usage: ", code=0):
     
     sys.exit(code)
 
+Months = {
+    "jan": "January",
+    "feb": "February",
+    "mar": "March",
+    "apr": "April",
+    "may": "May",
+    "jun": "June",
+    "jul": "July",
+    "aug": "August",
+    "sep": "September",
+    "oct": "October",
+    "nov": "November",
+    "dec": "December",
+    }
+
+def munge(r):
+    def _munge(s):
+        def f(x):
+            if " # ~" in x:
+                m,d = x.split(" # ~")
+                x = "%s %s," % (Months[m], d)                
+                
+            x = x.replace("\\\\", "\\").replace("\&", "&")
+            x = x.replace("---", "\u2014").replace("--", "\u2013")
+            x = x.replace("``", '\u201C').replace("''", '\u201D')
+            x = x.replace("`", "\u2018").replace("'", "\u2019")
+            return x
+                    
+        if isinstance(s, type("")): s = f(s)
+        elif isinstance(s, type([])): s = list(map(f, s))
+        
+        return s
+
+    return dict([ (k,_munge(v)) for (k,v) in r.items() ])
+
+
 _complete_re = re.compile("^\}$")
 _entry_re = re.compile("@(?P<entry>\w+)\{(?P<label>.+),$")
 _field_re = re.compile("(?P<key>\w+)\s*=\s*(?P<value>.*)$")
@@ -68,7 +104,8 @@ def parse(args, strings={}):
                     if label in records:
                         raise Exception("collision! label=%s" % (label,))
                     del record['_label']
-                    records[label] = record
+
+                    records[label] = munge(record)
                     record = {}
                     continue
 
