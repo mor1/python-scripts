@@ -51,7 +51,7 @@ def parse(args, strings={}):
             cnt = 0            
             for line in map(lambda l:l.strip(), inf.readlines()):
                 cnt += 1
-                if verbose: print("[%s:%d]: '%s'" % (inp, cnt, line))
+                if Verbose: print("[%s:%d]: '%s'" % (inp, cnt, line))
                 
                 if len(line) == 0: continue
 
@@ -89,6 +89,8 @@ def parse(args, strings={}):
                     value = m.group("value").rstrip(",")
                     record[key] += strings.get(value, value)
 
+    if Exc_unpublished:
+        records = dict([ (k,v) for (k,v) in records.items() if v['_type'] != "unpublished" ])
     return { "count": len(records), "records": records }
 
 _string_re = re.compile("^@string\{(?P<key>\w+)=(?P<value>.*)\}$")
@@ -98,7 +100,7 @@ def parse_strings(inp):
         cnt = 0
         for line in map(lambda l:l.strip(), inf.readlines()):
             cnt += 1
-            if verbose: print("[%s:%d]: '%s'" % (inp, cnt, line))
+            if Verbose: print("[%s:%d]: '%s'" % (inp, cnt, line))
             
             m = _string_re.match(line)
             if m:
@@ -110,10 +112,11 @@ def parse_strings(inp):
     return strings    
 
 if __name__ == '__main__':
-    global verbose
-    verbose = False
+    global Verbose, Exc_unpublished
     ## option parsing    
-    pairs = [ "h/help", "o:/output=", "s:/strings=", "v/verbose", ]
+    pairs = [ "h/help", "v/verbose","u/unpublished",
+              "o:/output=", "s:/strings=", ]
+    
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
@@ -121,12 +124,15 @@ if __name__ == '__main__':
 
     output = sys.stdout
     strings = None
+    Verbose = False
+    Exc_unpublished = True
     try:
         for o, a in opts:
             if o in ("-h", "--help"): die_with_usage()
             elif o in ("-o", "--output"): output = open(a, "w+a")
             elif o in ("-s", "--strings"): strings = a
-            elif o in ("-v", "--verbose"): verbose = True
+            elif o in ("-v", "--verbose"): Verbose = True
+            elif o in ("-u", "--unpublished"): Exc_unpublished = False
 
             else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
