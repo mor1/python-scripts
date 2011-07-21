@@ -49,14 +49,19 @@ Months = {
     "dec": "December",
     }
 
+_cite_re = re.compile("~\\\\cite.*$")
 def munge(r):
     def _munge(s):
         def f(x):
+            m = _cite_re.search(x)
+            if m: x = x.split(m.group(0))[0]
+            
             if " # ~" in x:
                 m,d = x.split(" # ~")
                 x = "%s %s," % (Months[m], d)                
                 
             x = x.replace("\\\\", "\\").replace("\&", "&")
+            x = x.replace("\\'i", "\u0131").replace("\\'e", "\u00e9")
             x = x.replace("---", "\u2014").replace("--", "\u2013")
             x = x.replace("``", '\u201C').replace("''", '\u201D')
             x = x.replace("`", "\u2018").replace("'", "\u2019")
