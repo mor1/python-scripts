@@ -23,7 +23,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
 # USA.
 
-import re, sys, getopt, os, json, pprint
+import re, sys, getopt, os, json, pprint, time
 
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
@@ -104,6 +104,8 @@ def parse(args, strings={}):
                     if 'author' in record:
                         record['author'] = [
                             a.rstrip(",") for a in record['author'].split(" and ") ]
+                    if 'tags' in record:
+                        record['tags'] = [ t.strip() for t in record['tags'].split(";") ]
 
                     label = record['_label']
                     if label in records:
@@ -183,4 +185,8 @@ if __name__ == '__main__':
     if strings: strings = parse_strings(strings)
     if len(args) == 0: die_with_usage("no input file given")
     records = parse(args, strings)
+    records["tool"] = { "name": "bib2json.py",
+                        "url": "https://github.com/mor1/python-scripts/blob/master/bib2json.py",
+                        }
+    records["date"] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
     print(json.JSONEncoder(ensure_ascii=True).encode(records))
