@@ -1,4 +1,4 @@
-Mort's Python Scripts
+gMort's Python Scripts
 =====================
 
 
@@ -54,6 +54,13 @@ num
 Print number in selection of useful bases (bin, dec, oct, hex).
 
 
+slots
+-----
+
+Given set of people's available times, compute number of people that can make
+each slot.  Useful for selecting a time for group meetings.
+
+
 skrype
 ------
 
@@ -66,11 +73,3 @@ tdump2txt
 
 Filter to pretty print `tcpdump -x` output to the right of the hex
 input: ASCII where possible, hex where not.
-
-
-uontt
------
-
-Scrape and reformat University of Nottingham timetable website at
-<http://nottingham.ac.uk/timetables>. 
-Now moved to <http://github.com/mor1/uon/>.
