@@ -54,18 +54,18 @@ num
 Print number in selection of useful bases (bin, dec, oct, hex).
 
 
-slots
------
-
-Given set of people's available times, compute number of people that can make
-each slot.  Useful for selecting a time for group meetings.
-
-
 skrype
 ------
 
 Skype log-parser, presenting a sequence of records.  If run as script,
 splices all .DBB logfiles to print in sequence-number order.
+
+
+slots
+-----
+
+Given set of people's available times, compute number of people that can make
+each slot.  Useful for selecting a time for group meetings.
 
 
 tdump2txt
