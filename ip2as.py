@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.1
+#!/usr/bin/env python3
 #
 # This is a C to Python translation of the corresponding functionality
 # in the 'NANOG traceroute' ('traACESroute').  See

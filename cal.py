@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.1
+#!/usr/bin/env python3
 #
 # Replacement for standard UNIX cal utility, supporting date ranges, and
 # defaulting to Monday as first day-of-week.

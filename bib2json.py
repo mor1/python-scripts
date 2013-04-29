@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.1
+#!/usr/bin/env python3
 #
 # Convert BibTeX files to json.  Makes some assumptions about the
 # format of the .bib inputs, particularly that they're well-formed but

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.1
+#!/usr/bin/env python3
 #
 # Parse tcpdump hex output as text. Usage is (eg.):
 #    $ tcpdump -x -s 2048 | tdump2txt.py
