@@ -119,9 +119,11 @@ if __name__ == '__main__':
 
     FORCE_NATURAL_MASK = 0
     VERBOSE = 1
+    ip_addrs = None
 
     ## option parsing    
-    pairs = [ "h/help", "q/quiet", "v/verbose", "V/VERBOSE", "n/natural", ]
+    pairs = [ "h/help", "q/quiet", "v/verbose", "V/VERBOSE", "n/natural",
+              "w:/whois=", "i:/input=", ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
@@ -134,13 +136,17 @@ if __name__ == '__main__':
             elif o in ('-v', '--verbose'): VERBOSE = 2 
             elif o in ('-V', '--VERBOSE'): VERBOSE = 3 
             elif o in ('-n', '--natural'): FORCE_NATURAL_MASK = 1
+            elif o in ('-w', '--whois'): RA_SERVER = a
+            elif o in ('-i', '--input'): ip_addrs = open(a)
             else: raise Exception("unhandled option")
+
     except Exception as err: die_with_usage(err, 3)
 
-    ip_addrs = args
-    if not ip_addrs: die_with_usage("no addresses!", 4)
+    if not ip_addrs:
+        ip_addrs = args
+        if not ip_addrs: die_with_usage("no addresses!", 4)
 
-    for ip_str in ip_addrs:
+    for ip_str in [ s.strip() for s in ip_addrs ]:
         try:
             if  '/' not in ip_str:
                 ip_addr = socket.gethostbyname(ip_str)
