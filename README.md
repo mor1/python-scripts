@@ -18,6 +18,10 @@ reasonably formatted input (ie., it's not a fully fledged BibTeX
 parser).  Running it through Emacs BibTeX-mode's 'validate' and
 'format' should suffice.
 
+    ~/src/python-scripts.git/bib2json.py \
+      -s ~/me.git/bibs.git/strings.bib   \
+      ~/me.git/bibs.git/rmm-*.bib >| papers.json 
+
 
 cal
 ---
