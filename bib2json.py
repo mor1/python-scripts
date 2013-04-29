@@ -24,6 +24,7 @@
 # USA.
 
 import re, sys, getopt, os, json, pprint, time
+from collections import OrderedDict
 
 def die_with_usage(err="Usage: ", code=0):
     print("""ERROR: %s
@@ -72,7 +73,7 @@ def munge(r):
         
         return s
 
-    return dict([ (k,_munge(v)) for (k,v) in r.items() ])
+    return OrderedDict(sorted([ (k,_munge(v)) for (k,v) in r.items() ]))
 
 
 _complete_re = re.compile("^\}$")
@@ -134,7 +135,10 @@ def parse(args, strings={}):
                     record[key] += strings.get(value, value)
 
     if Exc_unpublished:
-        records = dict([ (k,v) for (k,v) in records.items() if v['_type'] != "unpublished" ])
+        records = dict([ (k,v) for (k,v) in records.items() 
+                         if v['_type'] != "unpublished" ])
+    records = OrderedDict(sorted(records.items()))
+
     return { "count": len(records), "records": records }
 
 _string_re = re.compile("^@string\{(?P<key>\w+)=(?P<value>.*)\}$")
@@ -184,7 +188,7 @@ if __name__ == '__main__':
     ## parse input
     if strings: strings = parse_strings(strings)
     if len(args) == 0: die_with_usage("no input file given")
-    records = parse(args, strings)
+    records = OrderedDict(sorted(parse(args, strings).items()))
     records["tool"] = { "name": "bib2json.py",
                         "url": "https://github.com/mor1/python-scripts/blob/master/bib2json.py",
                         }
