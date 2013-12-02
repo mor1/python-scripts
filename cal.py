@@ -39,7 +39,7 @@ and <dates> are formatted as:
   <y1>-<y2>           : years from <y1> to <y2>, inclusive
   <m1>-<m2>/<y>       : months from <m1> to <m2> in year <y>, inclusive
   <m1>/<y1>-<m2>/<y2> : months from <m1> in year <y1> to <m2> in <y2>
-for day <d> either 1-7, Monday-Sunday, or abbreviation thereof; 
+for day <d> either 1-7, Monday-Sunday, or abbreviation thereof;
     month <m> either 1-12, January-December, or abbreviation thereof; and
     year <y> is fully qualified, ie., 20 is year 20, not 2020.
 
@@ -60,7 +60,7 @@ def _format(f, s):
     if nohilight or len(s.strip()) == 0: return s
     else:
         return '\x1b[0%s%s\x1b[0m' % (f,s)
-                                          
+
 def bold(s): return _format(';1m', s)
 def standout(s): return _format(';1;7m', s)
 def underline(s): return _format(';4m', s)
@@ -85,7 +85,7 @@ def range_months(sy,sm, ey,em):
         yield calendar.month(y,m)
         y,m = incr_month(y,m)
         if (y,m) > (ey,em): break
-                                                 
+
 def format_months(ms, ncols=3, sep='   '):
     empty_month = [((" "*20)+"\n")*8]
 
@@ -113,27 +113,27 @@ def format_months(ms, ncols=3, sep='   '):
                     ## only pad front for first line
                     if j == 2: newm = ['  '] * (7-len(m))
                     else: newm = [ ]
-                                    
+
                     for d in m:
                         if d == Date: d = standout("%02s" % d)
                         else: d = "%02s" % d
                         newm.append(d)
-                                      
+
                     ## OSX10.6 upgrade change?  ljust() started treating escape
                     ## chars as real chars (ie., can't do 20 for both higlighted
                     ## and unhighlighted).
                     mss[i][j] = ' '.join(newm).ljust(32)
-                    
+
                 else:
                     mss[i][j] = mss[i][j].ljust(20)
 
         for i in range(8):
             for m in mss: yield "%s%s" % (m[i], sep)
             yield "\n"
-    
+
 if __name__ == '__main__':
-    ## option parsing    
-    pairs = [ "h/help", "y/year", "n/nohilight", 
+    ## option parsing
+    pairs = [ "h/help", "y/year", "n/nohilight",
               "c:/columns=", "s:/separator=", "f:/firstday=", "t:/today=", ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
     Year, Month, Date = datetime.date.isoformat(today).split("-")[0:3]
     Date = Date.lstrip('0')
-                           
+
     ## compute the months to print
     months = []
     if len(args) == 0: args = [ Month ]

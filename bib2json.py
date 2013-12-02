@@ -32,7 +32,7 @@ def die_with_usage(err="Usage: ", code=0):
   -h/--help            : print this message
   -s/--strings <file>  : read abbreviations in from <file>
     """ % (err, sys.argv[0],))
-    
+
     sys.exit(code)
 
 Months = {
@@ -56,21 +56,21 @@ def munge(r):
         def f(x):
             m = _cite_re.search(x)
             if m: x = x.split(m.group(0))[0]
-            
+
             if " # ~" in x:
                 m,d = x.split(" # ~")
-                x = "%s %s," % (Months[m], d)                
-                
+                x = "%s %s," % (Months[m], d)
+
             x = x.replace("\\\\", "\\").replace("\&", "&")
             x = x.replace("\\'i", "\u0131").replace("\\'e", "\u00e9")
             x = x.replace("---", "\u2014").replace("--", "\u2013")
             x = x.replace("``", '\u201C').replace("''", '\u201D')
             x = x.replace("`", "\u2018").replace("'", "\u2019")
             return x
-                    
+
         if isinstance(s, type("")): s = f(s)
         elif isinstance(s, type([])): s = list(map(f, s))
-        
+
         return s
 
     return OrderedDict(sorted([ (k,_munge(v)) for (k,v) in r.items() ]))
@@ -84,17 +84,17 @@ _strip_map = str.maketrans({
     '{': None,
     '}': None,
     })
-def parse(args, strings={}):
+def parse(args, strings):
     records = {}
     for inp in args:
         with open(inp) as inf:
             record = {}
             key = value = None
-            cnt = 0            
+            cnt = 0
             for line in map(lambda l:l.strip(), inf.readlines()):
                 cnt += 1
                 if Verbose: print("[%s:%d]: '%s'" % (inp, cnt, line))
-                
+
                 if len(line) == 0: continue
 
                 m = _complete_re.match(line)
@@ -121,13 +121,17 @@ def parse(args, strings={}):
                 if m:
                     entry = m.group("entry").lower()
                     record['_type'] = entry
-                    record['_venue'] = os.path.basename(inp).split("-")[1].split(".")[0]
+                    try:
+                        venue = os.path.basename(inp).split("-")[1].split(".")[0]
+                    except:
+                        venue = ""
+                    record['_venue'] = venue
                     record['_label'] = m.group("label")
                     continue
 
                 m = _field_re.match(line)
                 if not m: record[key] += " "+line
-                else: 
+                else:
                     key = m.group("key").lower()
                     if key not in record: record[key] = ""
 
@@ -135,7 +139,7 @@ def parse(args, strings={}):
                     record[key] += strings.get(value, value)
 
     if Exc_unpublished:
-        records = dict([ (k,v) for (k,v) in records.items() 
+        records = dict([ (k,v) for (k,v) in records.items()
                          if v['_type'] != "unpublished" ])
     records = OrderedDict(sorted(records.items()))
 
@@ -149,7 +153,7 @@ def parse_strings(inp):
         for line in map(lambda l:l.strip(), inf.readlines()):
             cnt += 1
             if Verbose: print("[%s:%d]: '%s'" % (inp, cnt, line))
-            
+
             m = _string_re.match(line)
             if m:
                 key, value = m.group("key"), m.group("value")
@@ -157,14 +161,14 @@ def parse_strings(inp):
                     raise Exception("collision! key=%s # %s" % (key,strings.key,))
                 strings[key] = value
 
-    return strings    
+    return strings
 
 if __name__ == '__main__':
     global Verbose, Exc_unpublished
-    ## option parsing    
+    ## option parsing
     pairs = [ "h/help", "v/verbose","u/unpublished",
               "o:/output=", "s:/strings=", ]
-    
+
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
     longopts = [ pair.split("/")[1] for pair in pairs ]
     try: opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
@@ -187,6 +191,8 @@ if __name__ == '__main__':
 
     ## parse input
     if strings: strings = parse_strings(strings)
+    else: strings = {}
+
     if len(args) == 0: die_with_usage("no input file given")
     records = OrderedDict(sorted(parse(args, strings).items()))
     records["tool"] = { "name": "bib2json.py",

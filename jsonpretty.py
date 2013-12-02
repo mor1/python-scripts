@@ -34,7 +34,7 @@ Pretty print JSON <files...> specified, or stdin if none.
 
 if __name__ == '__main__':
 
-    ## option parsing    
+    ## option parsing
     pairs = [ "h/help", "l/line",
               "i:/indent=", ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])

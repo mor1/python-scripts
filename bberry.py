@@ -22,10 +22,10 @@ import sys, struct, re, string, traceback, os
 Verbose = False
 
 class BBerryExc(Exception): pass
-    
+
 def err(s):
     if Verbose: print >>sys.stderr, s
-    
+
 def fmtexc(e, with_tb=False):
     tb = traceback.extract_tb(sys.exc_info()[2])
     s = '%s: %s' % (e.__class__.__name__, str(e))
@@ -37,7 +37,7 @@ def fmtexc(e, with_tb=False):
 def isprintable(b):
     return ((b in string.printable)
             and (b == " " or b not in string.whitespace))
-                                                
+
 def btos(bs, ascii=False):
     if bs == None or bs == "": return ""
     def _fmt(b):
@@ -68,12 +68,12 @@ FHDR_LEN   = 3
 
 AddressBookTypes = {
     1: 'email',
-    6: 'work', 
-    7: 'home', 
-    8: 'mobile', 
-    16: 'work2', 
+    6: 'work',
+    7: 'home',
+    8: 'mobile',
+    16: 'work2',
     18: 'other',
-    32: 'fullname', 
+    32: 'fullname',
     33: 'company',
     35: 'address1',
     36: 'address2',
@@ -84,7 +84,7 @@ AddressBookTypes = {
     42: 'jobtitle',
     55: 'title',
     64: 'notes',
-    }    
+    }
 
 #
 # parse harness
@@ -103,7 +103,7 @@ def contact(rec):
                 print(" newval:", val, "\n", file=sys.stderr)
                 continue
             break
-        
+
         if ty not in rv: rv[ty] = val
         else:
             rv[ty] += " %s" % (val,)
@@ -137,7 +137,7 @@ def parse_dbrecs(f, ndbs, dbns):
                 'uid': ruid,
                 'fields': parse_fields(f, rlen-REC_OFFSET),
                 }
-    
+
 def parse_dbhdrs(f, ndbs):
     dbns = {}
     for i in range(ndbs):
@@ -150,7 +150,7 @@ def parse_dbhdrs(f, ndbs):
         dbns[i] = dbn[:-1].decode()
 
     return parse_dbrecs(f, ndbs, dbns)
-             
+
 def parse(f, verbose=False):
     global Verbose
     Verbose = verbose
@@ -210,7 +210,7 @@ def vcard(rec):
         vcard += 'NOTE: %(notes)s\n' % rec
     if 'other' in rec:
         vcard += 'NOTE: %(other)s\n' % rec
-                                          
+
     vcard += """END:VCARD\n"""
     return vcard
 

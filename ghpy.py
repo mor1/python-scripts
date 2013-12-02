@@ -34,7 +34,7 @@ Currently supported commands:
     sys.exit(code)
 
 ## helpers
-    
+
 BASE = "http://github.com/api/v2/json"
 def get(u, d=None):
     fp = urllib.request.urlopen(u, d)
@@ -63,11 +63,11 @@ def all_repositories(login, data):
         " ".join(("%s:%s" % (r['organization'], r['name'])
                   for r in orepos['repositories']))
         )
-        
+
 def all_organizations(login, data):
     repos = get_organizations(login, data)
     return " ".join((r['login'] for r in repos['organizations']))
-    
+
 def all_repository_urls(login, data):
     def _add_credentials(url):
         url = urllib.parse.urlparse(url)
@@ -76,13 +76,13 @@ def all_repository_urls(login, data):
                 username, (":%s" % (password,) if password else ""), url.netloc)
             url = (url.scheme, netloc, url.path, url.params, url.query, url.fragment)
         return urllib.parse.urlunparse(url)
-            
+
     repos = get_repositories(login, data)
 
     urls = (r['url'] for r in repos['repositories'])
-    if username or password: urls = map(_add_credentials, urls)    
+    if username or password: urls = map(_add_credentials, urls)
     return " ".join(urls)
-    
+
 def private_collaborators(login, data):
     repos = get_repositories(login, data)
     collaborators = {}
@@ -90,27 +90,27 @@ def private_collaborators(login, data):
         for c in get_collaborators(login, repo['name'], data):
             if c not in collaborators: collaborators[c] = set()
             collaborators[c].add(repo['name'])
-            
+
     cs = dict([ (n, list(cs)) for (n,cs) in collaborators.items() ])
     return json.dumps(cs)
 
 Commands = {
     'private-collaborators': ('print JSON-encoded map of collaborators to private repos',
                               private_collaborators),
-    
+
     'all-repositories': ('print space-separated list of repository names',
                          all_repositories),
 
     'all-organizations': ('print space-separated list of organizations',
                           all_organizations),
-    
+
     'all-repository-urls': ('print space-separated list of repository URLs',
                             all_repository_urls),
 
     }
 
 if __name__ == '__main__':
-    ## option parsing    
+    ## option parsing
     pairs = [ "h/help",
               "l:/login=", "t:/token=", "u:/username=", "p:/password=", ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
@@ -131,7 +131,7 @@ if __name__ == '__main__':
             else: raise Exception("unhandled option")
     except Exception as err: die_with_usage(err, 3)
     if not (login or token): die_with_usage()
-                                             
+
     ## setup credentials
     data = {}
     if login: data['login'] = login

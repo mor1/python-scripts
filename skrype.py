@@ -36,7 +36,7 @@ Verbose = 0
 class Logtype:
     calls    = ('call',)             ## cdr for call initiator
     cdrs     = ('callmember',)       ## cdr for other call members, one incl. duration
-    mucs     = ('chat', )            ## chat meta-data for mucs; incl. chat msgs for 1-1 chats 
+    mucs     = ('chat', )            ## chat meta-data for mucs; incl. chat msgs for 1-1 chats
     messages = ('chatmsg', )         ## chat messages;
     chatmembers = ('chatmember', )   ## chat metadata: speakers
     profiles = ('user', 'profile',)  ## user profiles: others, mine
@@ -47,7 +47,7 @@ class Logtype:
     unknown  = ('call', 'callmember', 'chat', 'chatmsg', 'user', 'profile',
                 'chatmember', 'contactgroup', 'transfer', 'voicemail',
                 )
-    
+
 class SkrypeExc(Exception): pass
 
 def fmtexc(e, with_tb=False):
@@ -61,7 +61,7 @@ def fmtexc(e, with_tb=False):
 def isprintable(b):
     return ((b in string.printable)
             and (b == " " or b not in string.whitespace))
-                                                
+
 def btos(bs, ascii=False, sep='.'):
     if bs == None or bs == "": return ""
     def _fmt(b):
@@ -89,11 +89,11 @@ def parse_number(label, bs, i):
             j += 1
         n |= ((ord(bs[j]) & 0x7f) << shift)
         return label, n, j+2
-            
+
     except IndexError, ie:
         raise SkrypeExc("bad %s exc:%s i:%s bs:%s" % (
             label, fmtexc(ie), i, fmtbs(bs[i+2:j+2], prefix="#   :")))
-    
+
 def parse_string(label, bs, i):
     try:
         j = i+2
@@ -103,7 +103,7 @@ def parse_string(label, bs, i):
     except IndexError, ie:
         raise SkrypeExc("bad %s exc:%s i:%s bs:%s" % (
             label, fmtexc(ie), i, fmtbs(bs[i+2:j+2], prefix="#   :")))
-                      
+
 class MessageIndicator:
     chatid      = b'\xe0\x03'
     chatid2     = b'\xb8\x03'
@@ -120,7 +120,7 @@ class MessageIndicator:
 MessageParsers = {
     MessageIndicator.chatid: lambda bs, i: parse_string('chatid', bs,i),
     MessageIndicator.chatid2: lambda bs, i: parse_string('chatid', bs,i),
-    MessageIndicator.timestamp: lambda bs, i: parse_number("timestamp", bs, i), 
+    MessageIndicator.timestamp: lambda bs, i: parse_number("timestamp", bs, i),
     MessageIndicator.username: lambda bs, i: parse_string('username', bs,i),
     MessageIndicator.username2: lambda bs, i: parse_string('username', bs,i),
     MessageIndicator.username3: lambda bs, i: parse_string('username', bs,i),
@@ -192,7 +192,7 @@ class CallIndicator:
     chatname    = b'\xfc\x01'
 
 CallParsers = {
-    CallIndicator.timestamp: lambda bs, i: parse_number("timestamp", bs, i), 
+    CallIndicator.timestamp: lambda bs, i: parse_number("timestamp", bs, i),
     CallIndicator.username: lambda bs, i: parse_string('username', bs,i),
     CallIndicator.usernamex: lambda bs, i: parse_string('username', bs,i),
     CallIndicator.pstn_number: lambda bs, i: parse_string('pstn-number', bs,i),
@@ -208,7 +208,7 @@ class CdrIndicator:
     cdrid       = b'\xb8\x01'
     forwarder   = b'\x84\x07'
     pickup      = b'\xe5\x19'
-    
+
 CdrParsers = {
     CdrIndicator.duration: lambda bs, i: parse_number("duration", bs, i),
     CdrIndicator.username: lambda bs, i: parse_string("username", bs, i),
@@ -259,13 +259,13 @@ def parse_items(ps, bs, with_junk=False):
             print >>sys.stderr, "# struct.%s" % (fmtexc(se, with_tb=True),)
             oi, i, junk = resync(ps, bs, i+1)
             if with_junk: d['junk'].append((oi, btos(junk, ascii=True)))
-            
+
         except KeyError:
             print >>sys.stderr, "# unknown indicator: i:%s ind:%s" % (
                 i, btos(indicator),)
             oi, i, junk = resync(ps, bs, i+1)
             if with_junk: d['junk'].append((oi, btos(junk, ascii=True)))
-        
+
         except SkrypeExc, se:
             print >>sys.stderr, "# %s" % (fmtexc(se, with_tb=True),)
             oi, i, junk = resync(ps, bs, i+1)
@@ -276,7 +276,7 @@ def parse_items(ps, bs, with_junk=False):
                 fmtexc(e, with_tb=True), i, fmtbs(bs[i:]))
             oi, i, junk = resync(ps, bs, i+1)
             if with_junk: d['junk'].append((oi, btos(junk, ascii=True)))
-            
+
     return d
 
 def parse(ps, bs, with_junk=False):
@@ -313,7 +313,7 @@ def records(m, ps, with_junk=False, with_raw=False):
             (marker, skr_len,) = struct.unpack("<4s L", bs[:SKR_HDR_LEN])
             if marker != SKR_MARKER: raise FormatExc("bad marker")
             if skr_len == 0: break
-                             
+
             record = { 'marker': marker,
                        'length': skr_len,
                        'value': parse(ps, bs[SKR_HDR_LEN:SKR_HDR_LEN+skr_len],
@@ -325,9 +325,9 @@ def records(m, ps, with_junk=False, with_raw=False):
 def messages(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
-    if ty not in Logtype.messages: 
+    if ty not in Logtype.messages:
         raise SkrypeExc("bad messages fn:%s" % (fn,))
     ps = MessageParsers
     return records(m, ps, with_junk, with_raw)
@@ -335,9 +335,9 @@ def messages(fn, with_junk=False, with_raw=False):
 def mucs(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
-    if ty not in Logtype.mucs: 
+    if ty not in Logtype.mucs:
         raise SkrypeExc("bad mucs fn:%s" % (fn,))
     ps = MucParsers
     return records(m, ps, with_junk, with_raw)
@@ -345,7 +345,7 @@ def mucs(fn, with_junk=False, with_raw=False):
 def profiles(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
     if ty not in Logtype.profiles:
         raise SkrypeExc("bad profiles fn:%s" % (fn,))
@@ -355,9 +355,9 @@ def profiles(fn, with_junk=False, with_raw=False):
 def calls(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
-    if ty not in Logtype.calls: 
+    if ty not in Logtype.calls:
         raise SkrypeExc("bad calls fn:%s" % (fn,))
     ps = CallParsers
     return records(m, ps, with_junk, with_raw)
@@ -365,9 +365,9 @@ def calls(fn, with_junk=False, with_raw=False):
 def cdrs(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
-    if ty not in Logtype.cdrs: 
+    if ty not in Logtype.cdrs:
         raise SkrypeExc("bad calls fn:%s" % (fn,))
     ps = CdrParsers
     return records(m, ps, with_junk, with_raw)
@@ -375,9 +375,9 @@ def cdrs(fn, with_junk=False, with_raw=False):
 def chatmembers(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
-    if ty not in Logtype.chatmembers: 
+    if ty not in Logtype.chatmembers:
         raise SkrypeExc("bad chatmembers fn:%s" % (fn,))
     ps = ChatmemberParsers
     return records(m, ps, with_junk, with_raw)
@@ -385,9 +385,9 @@ def chatmembers(fn, with_junk=False, with_raw=False):
 def unknown(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
-    if ty not in Logtype.unknown: 
+    if ty not in Logtype.unknown:
         raise SkrypeExc("bad calls fn:%s" % (fn,))
     ps = UnknownParsers
     return records(m, ps, with_junk, with_raw)
@@ -395,7 +395,7 @@ def unknown(fn, with_junk=False, with_raw=False):
 def process(fn, with_junk=False, with_raw=False):
     m = _recordsz_re.match(fn)
     if not m: raise SkrypeExc("bad log filename")
-    
+
     ty = os.path.basename(m.group("ty"))
     if ty in Logtype.calls: return ("calls", calls(fn, with_junk, with_raw))
     elif ty in Logtype.cdrs: return ("cdrs", cdrs(fn, with_junk, with_raw))
@@ -429,7 +429,7 @@ def splice(fns, with_junk=False, with_raw=False):
     def nex((ty, recs)):
         try: return R(ty, recs.next(), recs)
         except StopIteration: pass
-    
+
     records = filter(None, map(nex, map(
         lambda fn: process(fn, with_junk, with_raw), fns)))
     records.sort()
@@ -451,4 +451,3 @@ if __name__ == '__main__':
         fns = sys.argv[2:]
     else: fns = sys.argv[1:]
     for r in splice(fns): pprint.pprint(r)
-  

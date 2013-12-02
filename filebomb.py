@@ -25,7 +25,7 @@ def f():
             print "c", i
             l.append(open("/tmp/foo%d" % (i,), "w"))
         time.sleep(30)
-        
+
     elif pid > 0:
         l = []
         for i in range(5000):
@@ -35,4 +35,3 @@ def f():
         time.sleep(30)
 
 if __name__ == '__main__': f()
-        

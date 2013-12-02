@@ -41,7 +41,7 @@ Usage: %s [ options ] <names> where [options] are:
     -q|--quiet   : Be quiet (minimalist output)
     -v|--verbose : Be verbose
     -V|--VERBOSE : Be very verbose
-    
+
     -n|--natural : Force natural masks for old-style lookups
 
     Resolves the given names to their addresses and owning ASs.""" % (
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     VERBOSE = 1
     ip_addrs = None
 
-    ## option parsing    
+    ## option parsing
     pairs = [ "h/help", "q/quiet", "v/verbose", "V/VERBOSE", "n/natural",
               "w:/whois=", "i:/input=", ]
     shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
@@ -131,10 +131,10 @@ if __name__ == '__main__':
 
     try:
         for (o, a) in opts:
-            if o in ('-h', '--help'): usage() 
-            elif o in ('-q', '--quiet'): VERBOSE = 0 
-            elif o in ('-v', '--verbose'): VERBOSE = 2 
-            elif o in ('-V', '--VERBOSE'): VERBOSE = 3 
+            if o in ('-h', '--help'): usage()
+            elif o in ('-q', '--quiet'): VERBOSE = 0
+            elif o in ('-v', '--verbose'): VERBOSE = 2
+            elif o in ('-V', '--VERBOSE'): VERBOSE = 3
             elif o in ('-n', '--natural'): FORCE_NATURAL_MASK = 1
             elif o in ('-w', '--whois'): RA_SERVER = a
             elif o in ('-i', '--input'): ip_addrs = open(a)
@@ -171,7 +171,7 @@ if __name__ == '__main__':
             if VERBOSE > 1:
                 print(ip_addr, ':')
                 pprint.pprint(rvs)
-                
+
         except socket.error as error:
             if len(error.args) == 1:
                 err = 0
@@ -182,7 +182,7 @@ if __name__ == '__main__':
                 sys.stderr.write('%s: %s\n' % (os.strerror(err), msg))
 
             sys.exit(1)
-            
+
         # Make sure we only pick the 'best' owners: all those entries
         # who's covering route is as long as the longest covering
         # route

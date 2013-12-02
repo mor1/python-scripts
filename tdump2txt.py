@@ -56,7 +56,7 @@ def prettify(line, unprintable="."):
 
 if __name__ == '__main__':
     try:
-        ## option parsing    
+        ## option parsing
         pairs = [ "h/help", "u:/unprintable=", ]
         shortopts = "".join([ pair.split("/")[0] for pair in pairs ])
         longopts = [ pair.split("/")[1] for pair in pairs ]
@@ -74,10 +74,10 @@ if __name__ == '__main__':
         ## main loop: capture and prettify
         while 1:
             line = sys.stdin.readline().expandtabs()
-            
+
             if not line.startswith(HEX_PREFIX):
                 print("%s" % line.rstrip())
-            
+
             else:
                 index, data = line.split(":")
                 data = data.strip()
@@ -85,6 +85,6 @@ if __name__ == '__main__':
                 print("%s: %s%s%s" % (index, data, pad, prettify(data, unprintable)))
 
             sys.stdout.flush()
-                
+
     except KeyboardInterrupt: pass
     finally: sys.stdout.flush()

@@ -25,7 +25,7 @@ Days = [ "monday", "tuesday", "wednesday", "thursday", "friday",
          ]
 
 def process(slots, student, times):
-    
+
     for day in times:
         if day not in slots: slots[day] = {}
         if times[day] == ['-']: continue
@@ -35,7 +35,7 @@ def process(slots, student, times):
                     s,e = map(int, time.split('-'))
                 else:
                     s,e = int(time), s+100
-                    
+
                 for ss in range(s, e, 100):
                     if ss not in slots[day]: slots[day][ss] = []
                     slots[day][ss].append(student)
@@ -56,7 +56,7 @@ def format(slots, answers):
 
     for day in [ d[:2] for d in Days ]:
         if day not in slots: continue
-        
+
         string = "%s\n%4s |" % (string, day)
         for t in ts:
             n = "%d" % len(slots[day].get(t, []))
@@ -67,7 +67,7 @@ def format(slots, answers):
                     key=lambda a: ([d[:2] for d in Days].index(a[1]),a[2])):
         string = "%s\n\t%s %04d [%s]" % (
             string, a[1], a[2], ", ".join(a[3]))
-        
+
     return string
 
 def select(slots):
@@ -83,7 +83,7 @@ def select(slots):
 if __name__ == '__main__':
 
     filename = sys.argv[1]
-    
+
     student = None
     times = {}
     slots = {}
@@ -95,7 +95,7 @@ if __name__ == '__main__':
             es = [ s.strip(":").lower() for s in line.split() ]
             if len(es) > 0 and es[0] in Days:
                 times[es[0][:2]] = [ e.strip(", ") for e in es[1:] ]
-                
+
             else:
                 if student: slots = process(slots, student, times)
                 student = " ".join(es)

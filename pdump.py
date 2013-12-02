@@ -34,7 +34,7 @@ class pkts:
             sa = (self.dev, 0x0000)
             self.socket.bind(sa)
             self.bufsz = 1024
-            
+
         else:
             for i in range(10):
                 try:
@@ -46,7 +46,7 @@ class pkts:
                     if ioe.errno in (13, ## permission denied
                                      16, ## resource busy
                                      ): pass
-    
+
 
 ##             ioc = 0x40000000 | (4<<16) | (ord('B')<<8) | 113
 ##             buf = struct.pack('HH', 0,0)
@@ -56,7 +56,7 @@ class pkts:
             buf = struct.pack('32s', 'lo0') ##en0')
             (ifname,) = struct.unpack('32s', fcntl.ioctl(self.socket.fileno(), ioc, buf))
             print(ifname.rstrip(bytes.fromhex('00')).decode())
-            
+
             ioc = 0x40000000 | (4<<16) | (ord('B')<<8) | 102
             buf = struct.pack('I', 0)
             (self.bufsz,) = struct.unpack("I", fcntl.ioctl(self.socket.fileno(), ioc, buf))

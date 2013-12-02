@@ -20,7 +20,7 @@ parser).  Running it through Emacs BibTeX-mode's 'validate' and
 
     ~/src/python-scripts.git/bib2json.py \
       -s ~/me.git/bibs.git/strings.bib   \
-      ~/me.git/bibs.git/rmm-*.bib >| papers.json 
+      ~/me.git/bibs.git/rmm-*.bib >| papers.json
 
 
 cal
@@ -73,7 +73,7 @@ each slot.  Useful for selecting a time for group meetings.
 
 
 tdump2txt
---------- 
+---------
 
 Filter to pretty print `tcpdump -x` output to the right of the hex
 input: ASCII where possible, hex where not.
