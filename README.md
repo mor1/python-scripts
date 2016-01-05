@@ -30,6 +30,8 @@ Replacement for Unix `cal` command: similar output, more options.
 Highlights headers and current date.  Defaults to Monday as first
 day-of-week.
 
+**Now deprecated in favour of <https://github.com/mor1/ocal>.**
+
 
 ghpy
 ----
