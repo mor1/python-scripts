@@ -54,18 +54,25 @@ _cite_re = re.compile("~\\\\cite.*$")
 def munge(r):
     def _munge(s):
         def f(x):
-            m = _cite_re.search(x)
-            if m: x = x.split(m.group(0))[0]
+            try:
+                m = _cite_re.search(x)
+                if m: x = x.split(m.group(0))[0]
 
-            if " # ~" in x:
-                m,d = x.split(" # ~")
-                x = "%s %s," % (Months[m], d)
+                if " # ~" in x:
+                    m,d = x.split(" # ~")
+                    x = "%s %s," % (Months[m], d)
 
-            x = x.replace("\\\\", "\\").replace("\&", "&")
-            x = x.replace("\\'i", "\u0131").replace("\\'e", "\u00e9")
-            x = x.replace("---", "\u2014").replace("--", "\u2013")
-            x = x.replace("``", '\u201C').replace("''", '\u201D')
-            x = x.replace("`", "\u2018").replace("'", "\u2019")
+                if x in Months: x = Months[x]
+
+                x = x.replace("\\\\", "\\").replace("\&", "&")
+                x = x.replace("\\'i", "\u0131").replace("\\'e", "\u00e9")
+                x = x.replace("---", "\u2014").replace("--", "\u2013")
+                x = x.replace("``", '\u201C').replace("''", '\u201D')
+                x = x.replace("`", "\u2018").replace("'", "\u2019")
+            except ValueError as ve:
+                print("ARGH! %s\n%s\n" % (ve,x,))
+                raise
+
             return x
 
         if isinstance(s, type("")): s = f(s)
@@ -77,7 +84,7 @@ def munge(r):
 
 
 _complete_re = re.compile("^\}$")
-_entry_re = re.compile("@(?P<entry>\w+)\{(?P<label>.+),$")
+_entry_re = re.compile("@(?P<entry>\w+)\s*\{(?P<label>.+),$")
 _field_re = re.compile("(?P<key>\w+)\s*=\s*(?P<value>.*)$")
 _strip_map = str.maketrans({
     '"': None,
@@ -103,10 +110,14 @@ def parse(args, strings):
                         record[k] = record[k].translate(_strip_map).rstrip(",")
 
                     if 'author' in record:
-                        record['author'] = [
-                            a.rstrip(",") for a in record['author'].split(" and ") ]
+                        record['authors'] = [
+                            a.rstrip(",") for a in record['author'].split(" and ")
+                        ]
+                        del record['author']
                     if 'tags' in record:
-                        record['tags'] = [ t.strip() for t in record['tags'].split(";") ]
+                        record['tags'] = [
+                            t.strip() for t in record['tags'].split(";")
+                        ]
 
                     label = record['_label']
                     if label in records:
@@ -130,7 +141,9 @@ def parse(args, strings):
                     continue
 
                 m = _field_re.match(line)
-                if not m: record[key] += " "+line
+                if not m:
+                    if key not in record: record[key] = ""
+                    record[key] += " "+line
                 else:
                     key = m.group("key").lower()
                     if key not in record: record[key] = ""
@@ -158,7 +171,8 @@ def parse_strings(inp):
             if m:
                 key, value = m.group("key"), m.group("value")
                 if key in strings:
-                    raise Exception("collision! key=%s # %s" % (key,strings.key,))
+                    raise Exception(
+                        "collision! key=%s # %s" % (key,strings.key,))
                 strings[key] = value
 
     return strings
@@ -195,8 +209,10 @@ if __name__ == '__main__':
 
     if len(args) == 0: die_with_usage("no input file given")
     records = OrderedDict(sorted(parse(args, strings).items()))
-    records["tool"] = { "name": "bib2json.py",
-                        "url": "https://github.com/mor1/python-scripts/blob/master/bib2json.py",
-                        }
-    records["date"] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
+    records["tool"] = {
+        "name": "bib2json.py",
+        "url": "https://github.com/mor1/python-scripts/blob/master/bib2json.py",
+    }
+    records["date"] = time.strftime(
+        "%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
     print(json.JSONEncoder(ensure_ascii=True).encode(records))
