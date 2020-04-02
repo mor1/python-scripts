@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
+
+# Copyright (C) 2011 Richard Mortier <mort@cantab.net>. All Rights Reserved.
 #
-# Given set of people's available times, compute number of people that can
-# make each slot.  Useful for selecting a time for group meetings.
-#
-# Copyright (C) 2011 Richard Mortier <mort@cantab.net>.  All rights reserved.
-#
-# This program is free software: you can redistribute it and/or modify it
-# under the terms of the GNU Affero General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License
-# for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Licensed under the GPL v3; see LICENSE.md in the root of this distribution or
+# the full text at https://opensource.org/licenses/GPL-3.0
+
+# Given set of people's available times, compute number of people that can make
+# each slot. Useful for selecting a time for group meetings.
 
 import sys
 

@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
+
+# Copyright (C) 2020 Richard Mortier <mort@cantab.net>. All Rights Reserved.
 #
-# Copyright (c) 2020 Richard Mortier <mort@cantab.net>
-#
-# Licensed under the GPL v3; see <./LICENSE.md> in the root of this
-# distribution or the full text at https://opensource.org/licenses/GPL-3.0
+# Licensed under the GPL v3; see LICENSE.md in the root of this distribution or
+# the full text at https://opensource.org/licenses/GPL-3.0
+
+# Computes total and all (src, dst) pairs bandwidth given a PCAP trace.
+# Currently assumes a "cooked Linux" (SLL) format trace captured using `tcpdump
+# -i any` from a mininet simulation.
 #
 # Requires `pip|pip3 install dpkt`.
 #
 # Useful pre-processing command lines for large PCAP files include:
 #
-# $ editcap -S0 -d -A"YYYY-MM-DD HH:mm:SS" -B"YYYY-MM-DD HH:mm:SS" in.pcap fragment.pcap
+# $ editcap -S0 -d -A"YYYY-MM-DD HH:mm:SS" -B"YYYY-MM-DD HH:mm:SS" in.pcap \
+#     fragment.pcap
 
 import sys, socket, pprint, json
 import dpkt
