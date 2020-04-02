@@ -18,6 +18,7 @@
 
 import sys, socket, pprint, json
 import dpkt
+import argparse
 
 ## dpkt.pcap.Reader iterator doesn't provide the PCAP header, only the timestamp
 class R(dpkt.pcap.Reader):
@@ -38,10 +39,15 @@ def inet_to_str(inet):
         return socket.inet_ntop(socket.AF_INET6, inet)
 
 if __name__ == '__main__':
-    ## parameters; one day, these will be command line options. maybe.
-    INPUT  = "out.pcap"
-    WINDOW = 1 ## seconds
-    HOSTS  = [ '10.0.0.'+str(i+1) for i in range(4) ]
+    parser = argparse.ArgumentParser(description="Get the bandwidth per window from a pcap file.")
+    parser.add_argument('INPUT', help="Pcap file to analyse")
+    parser.add_argument('-w', '--window', dest="WINDOW", default=1, help="Window size for bandwidth averaging. Measured in seconds", type=int)
+    parser.add_argument('HOSTS', default=[], help="Hosts to calculate bandwith usage between", nargs='*')
+    args = parser.parse_args()
+
+    INPUT  = args.INPUT
+    WINDOW = args.WINDOW ## seconds
+    HOSTS  = args.HOSTS
 
     with open(INPUT, 'rb') as f:
         pcap = R(f)
@@ -96,6 +102,7 @@ if __name__ == '__main__':
             totbw += pkt.len
             src = inet_to_str(pkt.src)
             dst = inet_to_str(pkt.dst)
-            hostbw[src][dst] += pkt.len
+            if src in hostbw and dst in hostbw[src]:
+                hostbw[src][dst] += pkt.len
 
             prevts = ts
