@@ -52,11 +52,11 @@ if __name__ == '__main__':
         hostbw = { i: { j: 0 for j in HOSTS } for i in HOSTS }
         for ts, hdr, buf in pcap:
             if prevts == 0:
-                s = ", ".join(
+                s = ",".join(
                     ",".join([":".join([s,d]) for d in HOSTS])
                     for s in HOSTS
                 )
-                print("# time, totalbw, %s" % s, sep=",", flush=True)
+                print("# time,totalbw,%s" % s, sep=",", flush=True)
             cnt += 1
             if cnt % 10000 == 0:
                 print(cnt, "...", end="", sep="", flush=True, file=sys.stderr)
