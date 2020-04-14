@@ -16,9 +16,8 @@
 # $ editcap -S0 -d -A"YYYY-MM-DD HH:mm:SS" -B"YYYY-MM-DD HH:mm:SS" in.pcap \
 #     fragment.pcap
 
-import sys, socket, pprint, json
+import sys, socket, pprint, json, argparse
 import dpkt
-import argparse
 
 ## dpkt.pcap.Reader iterator doesn't provide the PCAP header, only the timestamp
 class R(dpkt.pcap.Reader):
@@ -39,11 +38,14 @@ def inet_to_str(inet):
         return socket.inet_ntop(socket.AF_INET6, inet)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Get the bandwidth per window from a pcap file.")
-    parser.add_argument('INPUT', help="Pcap file to analyse")
-    parser.add_argument('-w', '--window', dest="WINDOW", default=1, help="Window size for bandwidth averaging. Measured in seconds", type=int)
-    parser.add_argument('HOSTS', default=[], help="Hosts to calculate bandwith usage between", nargs='*')
-    args = parser.parse_args()
+    p = argparse.ArgumentParser(
+        description="Compute bandwidth from a PCAP file.")
+    p.add_argument('INPUT', help="PCAP file to analyse")
+    p.add_argument('-w', '--window', dest="WINDOW", default=1, type=int,
+                   help="Window size for bandwidth averaging [seconds]")
+    p.add_argument('HOSTS', default=[],
+                   help="Hosts to calculate bandwith usage between", nargs='*')
+    args = p.parse_args()
 
     INPUT  = args.INPUT
     WINDOW = args.WINDOW ## seconds
@@ -58,11 +60,11 @@ if __name__ == '__main__':
         hostbw = { i: { j: 0 for j in HOSTS } for i in HOSTS }
         for ts, hdr, buf in pcap:
             if prevts == 0:
-                s = ",".join(
+                s = ", ".join(
                     ",".join([":".join([s,d]) for d in HOSTS])
                     for s in HOSTS
                 )
-                print("# time,totalbw,%s" % s, sep=",", flush=True)
+                print("# time, totalbw, %s" % s, sep=",", flush=True)
             cnt += 1
             if cnt % 10000 == 0:
                 print(cnt, "...", end="", sep="", flush=True, file=sys.stderr)
@@ -102,7 +104,6 @@ if __name__ == '__main__':
             totbw += pkt.len
             src = inet_to_str(pkt.src)
             dst = inet_to_str(pkt.dst)
-            if src in hostbw and dst in hostbw[src]:
-                hostbw[src][dst] += pkt.len
+            hostbw[src][dst] += pkt.len
 
             prevts = ts
